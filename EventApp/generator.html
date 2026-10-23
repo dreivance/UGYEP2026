@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event QR Code Generator</title>
+  <!-- QRCode.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #fdfaf6; color: #333; }
+    
+    .container { max-width: 500px; margin: 0 auto; }
+    
+    /* Event Banner Styling - Matches Scanner App */
+    .banner-container { width: 100%; margin-bottom: 20px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.15); }
+    .event-banner { width: 100%; display: block; }
+    .banner-fallback {
+      display: none; background: linear-gradient(135deg, #d32f2f 0%, #1b8b22 100%); color: #fff;
+      padding: 25px 15px; text-align: center; border-radius: 12px; border-bottom: 5px solid #fde047;
+    }
+    .banner-fallback h1 { margin: 0; font-size: 24px; text-transform: uppercase; color: #fde047; text-shadow: 1px 2px 4px rgba(0,0,0,0.4); }
+    .banner-fallback p { margin: 5px 0 0 0; font-size: 14px; opacity: 0.95; }
+
+    .card { background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; border-top: 6px solid #d32f2f; }
+    h2 { margin-top: 0; color: #d32f2f; margin-bottom: 5px; }
+    p.sub { color: #64748b; font-size: 14px; margin-bottom: 25px; }
+    
+    .input-group { margin-bottom: 15px; text-align: left; }
+    .name-row { display: flex; gap: 10px; }
+    .name-row .input-group { flex: 1; margin-bottom: 15px; }
+    
+    label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #475569; }
+    input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; transition: border 0.2s; }
+    input:focus { outline: none; border-color: #1b8b22; box-shadow: 0 0 0 3px rgba(27, 139, 34, 0.15); }
+    
+    .photo-preview { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 2px solid #cbd5e1; margin-top: 10px; display: none; margin-left: auto; margin-right: auto; }
+
+    button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
+    
+    /* Fiesta Theme Buttons */
+    .btn-generate { background: #1b8b22; color: white; }
+    .btn-generate:hover { background: #15701a; }
+    .btn-generate:disabled { background: #94a3b8; cursor: not-allowed; }
+    
+    .btn-download { background: #d32f2f; color: white; display: none; }
+    .btn-download:hover { background: #b52525; }
+
+    #qr-container { margin: 20px auto; padding: 15px; background: #fff; border: 2px dashed #cbd5e1; border-radius: 12px; display: none; justify-content: center; }
+    #qrcode { display: flex; justify-content: center; }
+    #qrcode img { max-width: 100%; }
+    
+    .status-msg { font-size: 13px; display: none; margin-bottom: 15px; padding: 10px; border-radius: 6px; }
+    .status-error { color: #ef4444; background: #fee2e2; }
+    .status-loading { color: #0f5132; background: #d1e7dd; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Banner Match -->
+    <div class="banner-container">
+      <img id="banner-img" src="banner.jpg" alt="Unified Fiesta" class="event-banner" onerror="handleBannerError()">
+      <div id="banner-fallback" class="banner-fallback">
+        <h1>🎉 Unified Fiesta 🎉</h1>
+        <p>Celebrating the People Behind the Journey</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Event Registration</h2>
+      <p class="sub">Generate your personal QR code for entrance</p>
+
+      <div class="status-msg" id="status-msg"></div>
+
+      <div class="name-row">
+        <div class="input-group">
+          <label for="firstName">First Name</label>
+          <input type="text" id="firstName" placeholder="e.g. Juan" required>
+        </div>
+        <div class="input-group">
+          <label for="lastName">Last Name</label>
+          <input type="text" id="lastName" placeholder="e.g. Dela Cruz" required>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="contact">Contact Number</label>
+        <input type="tel" id="contact" placeholder="e.g. 09171234567" required autocomplete="tel">
+      </div>
+      
+      <div class="input-group">
+        <label for="email">UG Email Address</label>
+        <input type="email" id="email" placeholder="e.g. juan@ug.edu" required autocomplete="email">
+      </div>
+
+      <div class="input-group">
+        <label for="selfie">Take a Selfie (For Verification)</label>
+        <input type="file" id="selfie" accept="image/*" capture="user">
+        <img id="photo-preview" class="photo-preview" alt="Selfie Preview">
+      </div>
+
+      <button class="btn-generate" id="generate-btn" onclick="processAndGenerate()">Generate My QR Code</button>
+
+      <div id="qr-container">
+        <div id="qrcode"></div>
+      </div>
+
+      <button class="btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save to Phone / Download</button>
+    </div>
+  </div>
+
+  <script>
+    let base64Image = "";
+    // NEW Google Apps Script URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
+
+    // Handle missing banner image fallback
+    function handleBannerError() {
+      document.getElementById('banner-img').style.display = 'none';
+      document.getElementById('banner-fallback').style.display = 'block';
+    }
+
+    // Image Upload and Compression
+    document.getElementById('selfie').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 800; 
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+          } else {
+            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          base64Image = canvas.toDataURL('image/jpeg', 0.7); 
+          
+          const preview = document.getElementById('photo-preview');
+          preview.src = base64Image;
+          preview.style.display = 'block';
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function showStatus(msg, type) {
+      const statusEl = document.getElementById('status-msg');
+      statusEl.innerText = msg;
+      statusEl.className = `status-msg status-${type}`;
+      statusEl.style.display = 'block';
+    }
+
+    // Processing Google Drive Upload and Generating QR
+    async function processAndGenerate() {
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const contact = document.getElementById('contact').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const btn = document.getElementById('generate-btn');
+      
+      document.getElementById('status-msg').style.display = 'none';
+
+      if (!firstName || !lastName || !contact || !email || !base64Image) {
+        showStatus("Please fill out all fields and take a selfie.", "error");
+        return;
+      }
+
+      const fullName = `${firstName} ${lastName}`;
+
+      btn.disabled = true;
+      btn.innerText = "Uploading Selfie... Please wait";
+      showStatus("Saving details... This may take 5-10 seconds depending on your internet connection.", "loading");
+      document.getElementById('qr-container').style.display = 'none';
+      document.getElementById('download-btn').style.display = 'none';
+
+      try {
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+          body: JSON.stringify({ name: fullName, image: base64Image })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          generateQRCode(fullName, contact, email, result.url);
+          showStatus("Success! Your QR code is ready.", "success");
+        } else {
+          throw new Error(result.error || "Failed to upload image.");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus("Error uploading photo. Please try again.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Generate My QR Code";
+      }
+    }
+
+    function generateQRCode(name, contact, email, driveUrl) {
+      const payload = { n: name, c: contact, e: email, i: driveUrl };
+      const qrString = JSON.stringify(payload);
+      document.getElementById('qrcode').innerHTML = "";
+
+      new QRCode(document.getElementById("qrcode"), {
+        text: qrString,
+        width: 200, 
+        height: 200,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.M 
+      });
+
+      document.getElementById('qr-container').style.display = 'flex';
+      setTimeout(() => { document.getElementById('download-btn').style.display = 'block'; }, 100);
+    }
+
+    function downloadQR() {
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const img = document.querySelector("#qrcode img");
+      if (img && img.src) {
+        const link = document.createElement('a');
+        link.download = `Event_QR_${firstName}_${lastName}.png`;
+        link.href = img.src;
+        link.click();
+      }
+    }
+  </script>
+
+</body>
+</html>
