@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Attendance QR Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #fdfaf6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; }
+    
+    .banner-container { width: 100%; margin-bottom: 15px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.15); }
+    .event-banner { width: 100%; display: block; border-radius: 12px; }
+    .banner-fallback {
+      display: none; background: linear-gradient(135deg, #d32f2f 0%, #1b8b22 100%); color: #fff;
+      padding: 25px 15px; text-align: center; border-radius: 12px; border-bottom: 5px solid #fde047;
+    }
+    .banner-fallback h1 { margin: 0; font-size: 24px; text-transform: uppercase; color: #fde047; text-shadow: 1px 2px 4px rgba(0,0,0,0.4); }
+    .banner-fallback p { margin: 5px 0 0 0; font-size: 14px; opacity: 0.95; }
+    
+    h2 { text-align: center; margin-bottom: 5px; color: #d32f2f; }
+    p.sub { text-align: center; color: #64748b; margin-top: 0; font-size: 14px; margin-bottom: 15px; }
+    
+    #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 3px solid #1b8b22; }
+    
+    .card { background: #fff; border-radius: 12px; padding: 15px; margin-top: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .status-msg { text-align: center; font-weight: bold; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: none; }
+    .status-success { background: #dcfce7; color: #15803d; }
+    .status-warning { background: #fef3c7; color: #b45309; }
+    
+    .actions { display: flex; gap: 10px; justify-content: space-between; margin-bottom: 15px; }
+    button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn-excel { background: #1b8b22; color: white; }
+    .btn-clear { background: #d32f2f; color: white; }
+    button:hover { opacity: 0.9; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f8fafc; color: #475569; }
+    .badge { background: #fde047; color: #854d0e; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+
+    /* Modal Styles */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
+    .modal-card { background: #fff; border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-top: 6px solid #1b8b22; animation: popIn 0.2s ease-out; }
+    @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    
+    .modal-card h3 { margin-top: 0; color: #1e293b; font-size: 18px; margin-bottom: 5px; }
+    .modal-subtitle { font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 15px; }
+    
+    .modal-image { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #e2e8f0; margin: 0 auto 15px auto; display: none; }
+    
+    .details-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; text-align: left; }
+    .details-row { margin-bottom: 8px; font-size: 15px; color: #334155; }
+    .details-row:last-child { margin-bottom: 0; }
+    .details-label { font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: bold; display: block; }
+    .details-value { font-weight: bold; color: #0f172a; word-break: break-word; }
+    
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-confirm { background: #1b8b22; color: white; }
+    .btn-cancel { background: #64748b; color: white; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="banner-container">
+    <img id="banner-img" src="banner.jpg" alt="Unified Fiesta" class="event-banner" onerror="handleBannerError()">
+    <div id="banner-fallback" class="banner-fallback">
+      <h1>🎉 Unified Fiesta 🎉</h1>
+      <p>Celebrating the People Behind the Journey</p>
+    </div>
+  </div>
+
+  <h2>Attendance Scanner</h2>
+  <p class="sub">Scan QR Code to Check-In Participants</p>
+
+  <div id="status" class="status-msg"></div>
+
+  <div id="reader"></div>
+
+  <div class="card">
+    <div class="actions">
+      <button class="btn-excel" onclick="exportToExcel()">📥 Download Excel (.xlsx)</button>
+      <button class="btn-clear" onclick="clearLogs()">🗑️ Clear All</button>
+    </div>
+
+    <h3>Scanned Log (<span id="total-count">0</span>)</h3>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Email</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="log-table-body">
+          <tr><td colspan="5" style="text-align:center; color:#94a3b8;">No check-ins yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="confirm-modal" class="modal-overlay">
+  <div class="modal-card">
+    <h3>Verify Attendee</h3>
+    <p class="modal-subtitle">Confirm details match the person holding the QR</p>
+    
+    <img id="modal-image" class="modal-image" src="" alt="Attendee Photo">
+
+    <div class="details-box">
+      <div class="details-row">
+        <span class="details-label">Full Name</span>
+        <span id="modal-name" class="details-value">-</span>
+      </div>
+      <div class="details-row" style="margin-top: 10px;">
+        <span class="details-label">Contact Number</span>
+        <span id="modal-contact" class="details-value">-</span>
+      </div>
+      <div class="details-row" style="margin-top: 10px;">
+        <span class="details-label">Email Address</span>
+        <span id="modal-email" class="details-value">-</span>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cancelCheckIn()">❌ Reject</button>
+      <button class="btn-confirm" onclick="confirmCheckIn()">✅ Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let logs = JSON.parse(localStorage.getItem('attendance_logs') || '[]');
+  let lastScannedText = "";
+  let lastScannedTime = 0;
+  
+  let pendingRecord = null;
+  let isConfirming = false;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderTable();
+    initScanner();
+  });
+
+  function handleBannerError() {
+    document.getElementById('banner-img').style.display = 'none';
+    document.getElementById('banner-fallback').style.display = 'block';
+  }
+
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      osc.start(); osc.stop(ctx.currentTime + 0.15);
+    } catch(e) {}
+  }
+
+  function parseQRData(qrText) {
+    try {
+      const parsed = JSON.parse(qrText);
+      if (parsed.n || parsed.name) {
+        return { 
+          name: parsed.n || parsed.name || "N/A", 
+          contact: parsed.c || parsed.contact || "N/A",
+          email: parsed.e || "N/A",
+          image: parsed.i || null
+        };
+      }
+    } catch (e) {}
+
+    if (qrText.includes(",") || qrText.includes("|")) {
+      const parts = qrText.split(/[,|]/).map(s => s.trim());
+      return { name: parts[0] || qrText, contact: parts[1] || "N/A", email: "N/A", image: null };
+    }
+    return { name: qrText, contact: "N/A", email: "N/A", image: null };
+  }
+
+  function onScanSuccess(decodedText) {
+    if (isConfirming) return;
+
+    const now = Date.now();
+    if (decodedText === lastScannedText && (now - lastScannedTime) < 3000) return;
+    
+    lastScannedText = decodedText;
+    lastScannedTime = now;
+
+    const parsed = parseQRData(decodedText);
+    
+    const isDuplicate = logs.some(entry => entry.Name === parsed.name && entry.Contact === parsed.contact);
+    if (isDuplicate) {
+      showStatus(`⚠️ ${parsed.name} is ALREADY checked in!`, 'warning');
+      return;
+    }
+
+    pendingRecord = parsed;
+    isConfirming = true;
+
+    document.getElementById('modal-name').innerText = parsed.name;
+    document.getElementById('modal-contact').innerText = parsed.contact;
+    document.getElementById('modal-email').innerText = parsed.email;
+    
+    const imgEl = document.getElementById('modal-image');
+    if (parsed.image) {
+      imgEl.src = parsed.image;
+      imgEl.style.display = 'block';
+    } else {
+      imgEl.style.display = 'none';
+    }
+
+    document.getElementById('confirm-modal').style.display = 'flex';
+  }
+
+  function confirmCheckIn() {
+    if (!pendingRecord) return;
+    playBeep();
+
+    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dateString = new Date().toLocaleDateString();
+
+    const record = {
+      "#": logs.length + 1,
+      "Name": pendingRecord.name,
+      "Contact": pendingRecord.contact,
+      "Email": pendingRecord.email,
+      "Time": timeString,
+      "Date": dateString
+    };
+
+    logs.unshift(record);
+    localStorage.setItem('attendance_logs', JSON.stringify(logs));
+    
+    showStatus(`✅ Checked in: ${pendingRecord.name}`, 'success');
+    renderTable();
+    closeModal();
+  }
+
+  function cancelCheckIn() {
+    showStatus(`❌ Check-in canceled`, 'warning');
+    closeModal();
+  }
+
+  function closeModal() {
+    document.getElementById('confirm-modal').style.display = 'none';
+    pendingRecord = null;
+    setTimeout(() => { isConfirming = false; }, 1500);
+  }
+
+  function showStatus(msg, type) {
+    const statusEl = document.getElementById('status');
+    statusEl.className = `status-msg status-${type}`;
+    statusEl.innerText = msg;
+    statusEl.style.display = 'block';
+    setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('log-table-body');
+    document.getElementById('total-count').innerText = logs.length;
+
+    if (logs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">No check-ins yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = logs.map((log, index) => `
+      <tr>
+        <td><span class="badge">${logs.length - index}</span></td>
+        <td><strong>${escapeHtml(log.Name)}</strong></td>
+        <td>${escapeHtml(log.Contact)}</td>
+        <td>${escapeHtml(log.Email || "N/A")}</td>
+        <td>${log.Time}</td>
+      </tr>
+    `).join('');
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]; });
+  }
+
+  function exportToExcel() {
+    if (logs.length === 0) { alert("No data to export!"); return; }
+    const worksheet = XLSX.utils.json_to_sheet(logs);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
+    XLSX.writeFile(workbook, `Attendance_Log_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  function clearLogs() {
+    if (logs.length === 0) { alert("There is no data to clear yet."); return; }
+    const password = prompt("Enter password (admin123) to clear logs:");
+    if (password === "admin123") {
+      if (confirm("Password correct. Clear ALL logs permanently?")) {
+        logs = []; localStorage.removeItem('attendance_logs'); renderTable(); showStatus("✅ Logs cleared.", "success");
+      }
+    } else if (password !== null) { alert("Incorrect password!"); }
+  }
+
+  function initScanner() {
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 }, facingMode: "environment" }, false);
+    html5QrcodeScanner.render(onScanSuccess);
+  }
+</script>
+
+</body>
+</html>
