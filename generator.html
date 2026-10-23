@@ -204,9 +204,9 @@
         } else {
           throw new Error(result.error || "Failed to upload image.");
         }
-      } catch (err) {
+	} catch (err) {
         console.error(err);
-        showStatus("Error uploading photo. Please try again.", "error");
+        showStatus("Error: " + err.message, "error");
       } finally {
         btn.disabled = false;
         btn.innerText = "Generate My QR Code";
