@@ -205,6 +205,31 @@
     document.getElementById('banner-fallback').style.display = 'block';
   }
 
+  // Error Beep Tone for Duplicate Scans
+  function playErrorBeep() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.setValueAtTime(180, ctx.currentTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch(e){}
+  }
+
+  // Chime Sound + High Pitch Excited Voice for Successful Scans
   function playChimeAndGreeting() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -272,9 +297,15 @@
     const parsed = parseQRData(decodedText);
     const isDuplicate = logs.some(entry => entry.Name === parsed.name && entry.Contact === parsed.contact);
     
+    // DUPLICATE DETECTED: Alert user and prompt if they want to force re-scan
     if (isDuplicate) {
+      playErrorBeep();
       showStatus(`⚠️ ${parsed.name} is ALREADY checked in!`, 'warning');
-      return;
+      
+      const allowRescan = confirm(`⚠️ ${parsed.name} has ALREADY been scanned!\n\nDo you still want to re-scan / re-verify this participant?`);
+      if (!allowRescan) {
+        return; // User clicked Cancel, stop processing
+      }
     }
 
     pendingRecord = parsed;
@@ -316,12 +347,10 @@
       "Date": dateString
     };
 
-    // Save locally
     logs.unshift(record);
     localStorage.setItem('attendance_logs', JSON.stringify(logs));
     renderTable();
 
-    // Sync to Google Sheet
     try {
       await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
