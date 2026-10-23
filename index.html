@@ -69,8 +69,8 @@
     .btn-excel { background: #2e7d32; color: #fff; box-shadow: 0 4px 0 #1b5e20; }
     .btn-clear { background: #d32f2f; color: #fff; box-shadow: 0 4px 0 #b71c1c; }
     
-    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-    th, td { padding: 6px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
+    th, td { padding: 6px 4px; text-align: left; border-bottom: 1px solid #e0e0e0; }
     th { background: #f1f8e9; color: #2e7d32; font-weight: bold; }
 
     /* Verification Modal */
@@ -125,10 +125,16 @@
     <div style="overflow-x: auto;">
       <table>
         <thead>
-          <tr><th>#</th><th>Name</th><th>Contact</th><th>Time</th></tr>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Time</th>
+            <th>Device</th>
+          </tr>
         </thead>
         <tbody id="log-table-body">
-          <tr><td colspan="4" style="text-align:center; color:#888;">No scans yet</td></tr>
+          <tr><td colspan="5" style="text-align:center; color:#888;">No scans yet</td></tr>
         </tbody>
       </table>
     </div>
@@ -205,7 +211,6 @@
     document.getElementById('banner-fallback').style.display = 'block';
   }
 
-  // Error Beep Tone for Duplicate Scans
   function playErrorBeep() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -229,7 +234,6 @@
     } catch(e){}
   }
 
-  // Chime Sound + High Pitch Excited Voice for Successful Scans
   function playChimeAndGreeting() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -239,8 +243,8 @@
       const osc2 = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc1.type = 'sine'; osc1.frequency.value = 523.25; // C5
-      osc2.type = 'sine'; osc2.frequency.value = 659.25; // E5
+      osc1.type = 'sine'; osc1.frequency.value = 523.25;
+      osc2.type = 'sine'; osc2.frequency.value = 659.25;
 
       osc1.connect(gain); osc2.connect(gain);
       gain.connect(ctx.destination);
@@ -297,14 +301,13 @@
     const parsed = parseQRData(decodedText);
     const isDuplicate = logs.some(entry => entry.Name === parsed.name && entry.Contact === parsed.contact);
     
-    // DUPLICATE DETECTED: Alert user and prompt if they want to force re-scan
     if (isDuplicate) {
       playErrorBeep();
       showStatus(`⚠️ ${parsed.name} is ALREADY checked in!`, 'warning');
       
       const allowRescan = confirm(`⚠️ ${parsed.name} has ALREADY been scanned!\n\nDo you still want to re-scan / re-verify this participant?`);
       if (!allowRescan) {
-        return; // User clicked Cancel, stop processing
+        return;
       }
     }
 
@@ -344,7 +347,8 @@
       "Contact": pendingRecord.contact,
       "Email": pendingRecord.email,
       "Time": timeString,
-      "Date": dateString
+      "Date": dateString,
+      "Device": scannerDeviceName
     };
 
     logs.unshift(record);
@@ -399,7 +403,7 @@
     document.getElementById('total-count').innerText = logs.length;
 
     if (logs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">No scans yet</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">No scans yet</td></tr>';
       return;
     }
 
@@ -409,6 +413,7 @@
         <td><strong>${escapeHtml(log.Name)}</strong></td>
         <td>${escapeHtml(log.Contact)}</td>
         <td>${log.Time}</td>
+        <td><span style="background:#e8f5e9; color:#1b5e20; padding:2px 4px; border-radius:4px; font-weight:bold;">${escapeHtml(log.Device || "N/A")}</span></td>
       </tr>
     `).join('');
   }
