@@ -54,6 +54,7 @@
     .status-msg { font-size: 13px; display: none; margin-bottom: 15px; padding: 10px; border-radius: 6px; }
     .status-error { color: #ef4444; background: #fee2e2; }
     .status-loading { color: #0f5132; background: #d1e7dd; font-weight: bold; }
+    .status-success { color: #15803d; background: #dcfce7; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -113,7 +114,7 @@
 
   <script>
     let base64Image = "";
-    // NEW Google Apps Script URL
+    // Google Apps Script URL
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
 
     // Handle missing banner image fallback
@@ -192,7 +193,6 @@
         const response = await fetch(GOOGLE_SCRIPT_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-          // UPDATED: Now passing the email in the JSON body for the Apps Script to use in the filename
           body: JSON.stringify({ name: fullName, email: email, image: base64Image })
         });
 
@@ -204,9 +204,9 @@
         } else {
           throw new Error(result.error || "Failed to upload image.");
         }
-	} catch (err) {
+      } catch (err) {
         console.error(err);
-        showStatus("Error: " + err.message, "error");
+        showStatus("Error uploading photo. Please try again.", "error");
       } finally {
         btn.disabled = false;
         btn.innerText = "Generate My QR Code";
@@ -227,8 +227,12 @@
         correctLevel : QRCode.CorrectLevel.M 
       });
 
-      document.getElementById('qr-container').style.display = 'flex';
+      const qrContainer = document.getElementById('qr-container');
+      qrContainer.style.display = 'flex';
       setTimeout(() => { document.getElementById('download-btn').style.display = 'block'; }, 100);
+
+      // Smoothly scroll to center the generated QR code in view
+      qrContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function downloadQR() {

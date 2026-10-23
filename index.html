@@ -44,15 +44,15 @@
 
     /* Modal Styles */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
-    .modal-card { background: #fff; border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-top: 6px solid #1b8b22; animation: popIn 0.2s ease-out; }
+    .modal-card { background: #fff; border-radius: 14px; padding: 20px; width: 100%; max-width: 440px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-top: 6px solid #1b8b22; animation: popIn 0.2s ease-out; max-height: 90vh; overflow-y: auto; }
     @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     
     .modal-card h3 { margin-top: 0; color: #1e293b; font-size: 18px; margin-bottom: 5px; }
     .modal-subtitle { font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 15px; }
     
-    /* ENLARGED PHOTO CONTAINER */
-    .modal-image-wrapper { margin: 0 auto 15px auto; width: 140px; height: 140px; }
-    .modal-image { width: 140px; height: 140px; border-radius: 12px; object-fit: cover; border: 3px solid #1b8b22; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+    /* ACTUAL SIZE IMAGE CONTAINER */
+    .modal-image-wrapper { margin: 0 auto 15px auto; width: 100%; max-width: 320px; display: flex; justify-content: center; align-items: center; }
+    .modal-image { max-width: 100%; max-height: 300px; width: auto; height: auto; border-radius: 8px; border: 2px solid #cbd5e1; display: none; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
     
     .details-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; text-align: left; }
     .details-row { margin-bottom: 8px; font-size: 15px; color: #334155; }
@@ -158,16 +158,16 @@
     document.getElementById('banner-fallback').style.display = 'block';
   }
 
-  function playBeep() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sine'; osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      osc.start(); osc.stop(ctx.currentTime + 0.15);
-    } catch(e) {}
+  // Jolly Speech Greeting
+  function playJollyWelcome() {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); 
+      const utterance = new SpeechSynthesisUtterance("Welcome to the Fiesta!");
+      utterance.pitch = 1.3; 
+      utterance.rate = 1.05;  
+      utterance.volume = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
   }
 
   function parseQRData(qrText) {
@@ -176,7 +176,6 @@
       if (parsed.n || parsed.name) {
         let imageUrl = parsed.i || null;
         
-        // Convert old Google Drive links on the fly to new lh3 direct link format
         if (imageUrl && imageUrl.includes('drive.google.com/uc?export=view&id=')) {
           const id = imageUrl.split('id=')[1];
           imageUrl = 'https://lh3.googleusercontent.com/d/' + id;
@@ -238,7 +237,7 @@
 
   function confirmCheckIn() {
     if (!pendingRecord) return;
-    playBeep();
+    playJollyWelcome();
 
     const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const dateString = new Date().toLocaleDateString();
