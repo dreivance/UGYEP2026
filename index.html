@@ -50,7 +50,9 @@
     .modal-card h3 { margin-top: 0; color: #1e293b; font-size: 18px; margin-bottom: 5px; }
     .modal-subtitle { font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 15px; }
     
-    .modal-image { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #e2e8f0; margin: 0 auto 15px auto; display: none; }
+    /* ENLARGED PHOTO CONTAINER */
+    .modal-image-wrapper { margin: 0 auto 15px auto; width: 140px; height: 140px; }
+    .modal-image { width: 140px; height: 140px; border-radius: 12px; object-fit: cover; border: 3px solid #1b8b22; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
     
     .details-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; text-align: left; }
     .details-row { margin-bottom: 8px; font-size: 15px; color: #334155; }
@@ -112,7 +114,9 @@
     <h3>Verify Attendee</h3>
     <p class="modal-subtitle">Confirm details match the person holding the QR</p>
     
-    <img id="modal-image" class="modal-image" src="" alt="Attendee Photo">
+    <div class="modal-image-wrapper">
+      <img id="modal-image" class="modal-image" src="" alt="Attendee Photo">
+    </div>
 
     <div class="details-box">
       <div class="details-row">
@@ -170,11 +174,19 @@
     try {
       const parsed = JSON.parse(qrText);
       if (parsed.n || parsed.name) {
+        let imageUrl = parsed.i || null;
+        
+        // Convert old Google Drive links on the fly to new lh3 direct link format
+        if (imageUrl && imageUrl.includes('drive.google.com/uc?export=view&id=')) {
+          const id = imageUrl.split('id=')[1];
+          imageUrl = 'https://lh3.googleusercontent.com/d/' + id;
+        }
+        
         return { 
           name: parsed.n || parsed.name || "N/A", 
           contact: parsed.c || parsed.contact || "N/A",
           email: parsed.e || "N/A",
-          image: parsed.i || null
+          image: imageUrl
         };
       }
     } catch (e) {}
@@ -212,6 +224,9 @@
     
     const imgEl = document.getElementById('modal-image');
     if (parsed.image) {
+      imgEl.onerror = function() {
+        this.style.display = 'none';
+      };
       imgEl.src = parsed.image;
       imgEl.style.display = 'block';
     } else {
