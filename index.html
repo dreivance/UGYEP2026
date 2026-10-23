@@ -79,7 +79,7 @@
     .modal-card h3 { font-family: 'Fredoka One', cursive; color: #e65100; font-size: 22px; margin: 0 0 4px 0; }
     .modal-subtitle { font-size: 12px; color: #2e7d32; font-weight: 700; margin-bottom: 12px; }
 
-    /* Screen-Wide Full Photo */
+    /* Screen-Wide Full Photo Container */
     .modal-image-wrapper { width: 100%; margin-bottom: 12px; border-radius: 10px; overflow: hidden; border: 2px solid #2e7d32; background: #e8f5e9; }
     .modal-image { width: 100%; height: auto; max-height: 360px; object-fit: contain; display: block; }
 
@@ -211,6 +211,7 @@
     document.getElementById('banner-fallback').style.display = 'block';
   }
 
+  // Error Beep Tone for Duplicate Scans
   function playErrorBeep() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -234,6 +235,7 @@
     } catch(e){}
   }
 
+  // Chime Sound + High Pitch Excited Voice for Successful Scans
   function playChimeAndGreeting() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -301,16 +303,26 @@
     const parsed = parseQRData(decodedText);
     const isDuplicate = logs.some(entry => entry.Name === parsed.name && entry.Contact === parsed.contact);
     
+    // DUPLICATE DETECTED
     if (isDuplicate) {
+      // 1. Play error beep immediately
       playErrorBeep();
       showStatus(`⚠️ ${parsed.name} is ALREADY checked in!`, 'warning');
       
-      const allowRescan = confirm(`⚠️ ${parsed.name} has ALREADY been scanned!\n\nDo you still want to re-scan / re-verify this participant?`);
-      if (!allowRescan) {
-        return;
-      }
+      // 2. Wait 400ms for error tone to complete before freezing JS with alert
+      setTimeout(() => {
+        const allowRescan = confirm(`⚠️ ${parsed.name} has ALREADY been scanned!\n\nDo you still want to re-scan / re-verify this participant?`);
+        if (allowRescan) {
+          openVerificationModal(parsed);
+        }
+      }, 400);
+      return;
     }
 
+    openVerificationModal(parsed);
+  }
+
+  function openVerificationModal(parsed) {
     pendingRecord = parsed;
     isConfirming = true;
 
