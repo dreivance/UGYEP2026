@@ -4,73 +4,109 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Event QR Code Generator</title>
-  <!-- QRCode.js Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   
   <style>
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #fdfaf6; color: #333; }
     
-    .container { max-width: 500px; margin: 0 auto; }
-    
-    /* Event Banner Styling - Matches Scanner App */
-    .banner-container { width: 100%; margin-bottom: 20px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.15); }
-    .event-banner { width: 100%; display: block; }
+    body {
+      font-family: 'Quicksand', -apple-system, sans-serif;
+      margin: 0;
+      padding: 30px 15px;
+      background: linear-gradient(180deg, #70bbfd 0%, #a2d2ff 50%, #c8e6c9 100%);
+      background-attachment: fixed;
+      color: #1b4332;
+      min-height: 100vh;
+    }
+
+    .flag-banner {
+      width: 100%;
+      height: 24px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+      background-image: repeating-linear-gradient(45deg, #e53935 0 20px, #fdd835 20px 40px, #43a047 40px 60px, #1e88e5 60px 80px, #8e24aa 80px 100px);
+      clip-path: polygon(0 0, 100% 0, 100% 70%, 95% 100%, 90% 70%, 85% 100%, 80% 70%, 75% 100%, 70% 70%, 65% 100%, 60% 70%, 55% 100%, 50% 70%, 45% 100%, 40% 70%, 35% 100%, 30% 70%, 25% 100%, 20% 70%, 15% 100%, 10% 70%, 5% 100%, 0 70%);
+    }
+
+    .container { max-width: 480px; margin: 10px auto 0 auto; }
+
+    .card {
+      background: #fffdf5;
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      border: 4px solid #2e7d32;
+      outline: 4px solid #a5d6a7;
+      text-align: center;
+    }
+
+    .banner-container { width: 100%; margin-bottom: 12px; border-radius: 12px; overflow: hidden; }
+    .event-banner { width: 100%; display: block; border-radius: 12px; }
     .banner-fallback {
       display: none; background: linear-gradient(135deg, #d32f2f 0%, #1b8b22 100%); color: #fff;
-      padding: 25px 15px; text-align: center; border-radius: 12px; border-bottom: 5px solid #fde047;
+      padding: 20px 10px; text-align: center; border-radius: 12px;
     }
-    .banner-fallback h1 { margin: 0; font-size: 24px; text-transform: uppercase; color: #fde047; text-shadow: 1px 2px 4px rgba(0,0,0,0.4); }
-    .banner-fallback p { margin: 5px 0 0 0; font-size: 14px; opacity: 0.95; }
+    .banner-fallback h1 { margin: 0; font-family: 'Fredoka One', cursive; font-size: 22px; color: #fde047; }
 
-    .card { background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; border-top: 6px solid #d32f2f; }
-    h2 { margin-top: 0; color: #d32f2f; margin-bottom: 5px; }
-    p.sub { color: #64748b; font-size: 14px; margin-bottom: 25px; }
+    h2 { font-family: 'Fredoka One', cursive; color: #e65100; text-transform: uppercase; margin: 8px 0 2px 0; font-size: 26px; letter-spacing: 0.5px; }
+    p.sub { color: #2e7d32; font-weight: 700; margin-top: 0; font-size: 13px; margin-bottom: 20px; }
     
-    .input-group { margin-bottom: 15px; text-align: left; }
+    .input-group { margin-bottom: 14px; text-align: left; }
     .name-row { display: flex; gap: 10px; }
-    .name-row .input-group { flex: 1; margin-bottom: 15px; }
+    .name-row .input-group { flex: 1; margin-bottom: 14px; }
     
-    label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #475569; }
-    input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; transition: border 0.2s; }
-    input:focus { outline: none; border-color: #1b8b22; box-shadow: 0 0 0 3px rgba(27, 139, 34, 0.15); }
+    label { display: block; font-weight: 700; margin-bottom: 4px; font-size: 12px; color: #2e7d32; text-transform: uppercase; }
+    input { width: 100%; padding: 10px 12px; border: 2px solid #a5d6a7; border-radius: 10px; font-size: 14px; background: #fff; font-family: inherit; }
+    input:focus { outline: none; border-color: #e65100; box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.15); }
     
-    .photo-preview { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 2px solid #cbd5e1; margin-top: 10px; display: none; margin-left: auto; margin-right: auto; }
+    .photo-preview { width: 100px; height: 100px; border-radius: 10px; object-fit: cover; border: 2px solid #a5d6a7; margin-top: 8px; display: none; margin-left: auto; margin-right: auto; }
 
-    button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
+    /* Orange Fiesta Button matching original design */
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Fredoka One', cursive;
+      font-size: 16px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: 0.2s;
+      margin-top: 6px;
+    }
+    .btn-generate { background: linear-gradient(180deg, #ff8f00 0%, #e65100 100%); color: white; box-shadow: 0 5px 0 #b23c00; }
+    .btn-generate:disabled { background: #b0bec5; box-shadow: none; cursor: not-allowed; }
     
-    /* Fiesta Theme Buttons */
-    .btn-generate { background: #1b8b22; color: white; }
-    .btn-generate:hover { background: #15701a; }
-    .btn-generate:disabled { background: #94a3b8; cursor: not-allowed; }
-    
-    .btn-download { background: #d32f2f; color: white; display: none; }
-    .btn-download:hover { background: #b52525; }
+    .btn-download { background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%); color: white; box-shadow: 0 5px 0 #1b5e20; display: none; margin-top: 10px; }
 
-    #qr-container { margin: 20px auto; padding: 15px; background: #fff; border: 2px dashed #cbd5e1; border-radius: 12px; display: none; justify-content: center; }
-    #qrcode { display: flex; justify-content: center; }
-    #qrcode img { max-width: 100%; }
+    #qr-container { margin: 15px auto; padding: 12px; background: #fff; border: 2px dashed #a5d6a7; border-radius: 12px; display: none; justify-content: center; }
     
-    .status-msg { font-size: 13px; display: none; margin-bottom: 15px; padding: 10px; border-radius: 6px; }
-    .status-error { color: #ef4444; background: #fee2e2; }
-    .status-loading { color: #0f5132; background: #d1e7dd; font-weight: bold; }
-    .status-success { color: #15803d; background: #dcfce7; font-weight: bold; }
+    .status-msg { font-size: 13px; font-weight: bold; display: none; margin-bottom: 12px; padding: 8px; border-radius: 8px; }
+    .status-error { color: #c62828; background: #ffebee; }
+    .status-loading { color: #1b5e20; background: #e8f5e9; }
+    .status-success { color: #1b5e20; background: #c8e6c9; }
+    
+    .footer-text { font-size: 11px; font-weight: bold; color: #a5d6a7; margin-top: 15px; letter-spacing: 1px; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <!-- Banner Match -->
-    <div class="banner-container">
-      <img id="banner-img" src="banner.jpg" alt="Unified Fiesta" class="event-banner" onerror="handleBannerError()">
-      <div id="banner-fallback" class="banner-fallback">
-        <h1>🎉 Unified Fiesta 🎉</h1>
-        <p>Celebrating the People Behind the Journey</p>
-      </div>
-    </div>
+  <div class="flag-banner"></div>
 
+  <div class="container">
     <div class="card">
-      <h2>Event Registration</h2>
+      <div class="banner-container">
+        <img id="banner-img" src="banner.jpg" alt="Unified Fiesta" class="event-banner" onerror="handleBannerError()">
+        <div id="banner-fallback" class="banner-fallback">
+          <h1>🎉 UNIFIED FIESTA 🎉</h1>
+        </div>
+      </div>
+
+      <h2>Fiesta Registration</h2>
       <p class="sub">Generate your personal QR code for entrance</p>
 
       <div class="status-msg" id="status-msg"></div>
@@ -92,7 +128,7 @@
       </div>
       
       <div class="input-group">
-        <label for="email">UG Email Address</label>
+        <label for="email">Email Address</label>
         <input type="email" id="email" placeholder="e.g. juan@ug.edu" required autocomplete="email">
       </div>
 
@@ -108,22 +144,21 @@
         <div id="qrcode"></div>
       </div>
 
-      <button class="btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save to Phone / Download</button>
+      <button class="btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save / Download QR Code</button>
+      
+      <div class="footer-text">UNIFIED GLOBAL · UNIFIED FIESTA</div>
     </div>
   </div>
 
   <script>
     let base64Image = "";
-    // Google Apps Script URL
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
 
-    // Handle missing banner image fallback
     function handleBannerError() {
       document.getElementById('banner-img').style.display = 'none';
       document.getElementById('banner-fallback').style.display = 'block';
     }
 
-    // Image Upload and Compression
     document.getElementById('selfie').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -134,8 +169,7 @@
         img.onload = function() {
           const canvas = document.createElement('canvas');
           const MAX_SIZE = 800; 
-          let width = img.width;
-          let height = img.height;
+          let width = img.width, height = img.height;
 
           if (width > height) {
             if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
@@ -143,13 +177,11 @@
             if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
           }
 
-          canvas.width = width;
-          canvas.height = height;
+          canvas.width = width; canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
           base64Image = canvas.toDataURL('image/jpeg', 0.7); 
-          
           const preview = document.getElementById('photo-preview');
           preview.src = base64Image;
           preview.style.display = 'block';
@@ -166,7 +198,6 @@
       statusEl.style.display = 'block';
     }
 
-    // Processing Google Drive Upload and Generating QR
     async function processAndGenerate() {
       const firstName = document.getElementById('firstName').value.trim();
       const lastName = document.getElementById('lastName').value.trim();
@@ -185,9 +216,7 @@
 
       btn.disabled = true;
       btn.innerText = "Uploading Selfie... Please wait";
-      showStatus("Saving details... This may take 5-10 seconds depending on your internet connection.", "loading");
-      document.getElementById('qr-container').style.display = 'none';
-      document.getElementById('download-btn').style.display = 'none';
+      showStatus("Saving details... This may take 5-10 seconds.", "loading");
 
       try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -220,8 +249,8 @@
 
       new QRCode(document.getElementById("qrcode"), {
         text: qrString,
-        width: 200, 
-        height: 200,
+        width: 180, 
+        height: 180,
         colorDark : "#000000",
         colorLight : "#ffffff",
         correctLevel : QRCode.CorrectLevel.M 
@@ -229,9 +258,7 @@
 
       const qrContainer = document.getElementById('qr-container');
       qrContainer.style.display = 'flex';
-      setTimeout(() => { document.getElementById('download-btn').style.display = 'block'; }, 100);
-
-      // Smoothly scroll to center the generated QR code in view
+      document.getElementById('download-btn').style.display = 'block';
       qrContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
@@ -241,7 +268,7 @@
       const img = document.querySelector("#qrcode img");
       if (img && img.src) {
         const link = document.createElement('a');
-        link.download = `Event_QR_${firstName}_${lastName}.png`;
+        link.download = `Fiesta_QR_${firstName}_${lastName}.png`;
         link.href = img.src;
         link.click();
       }
