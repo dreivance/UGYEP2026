@@ -60,7 +60,6 @@
     input { width: 100%; padding: 10px 12px; border: 2px solid #a5d6a7; border-radius: 10px; font-size: 14px; background: #fff; font-family: inherit; }
     input:focus { outline: none; border-color: #e65100; box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.15); }
 
-    /* Domain Autocomplete Pill */
     .domain-suggestion {
       display: none;
       margin-top: 6px;
@@ -78,8 +77,87 @@
     .domain-suggestion:hover { background: #c8e6c9; }
     .domain-suggestion:active { transform: scale(0.97); }
     .domain-suggestion span { color: #e65100; }
-    
-    .photo-preview { width: 100px; height: 100px; border-radius: 10px; object-fit: cover; border: 2px solid #a5d6a7; margin-top: 8px; display: none; margin-left: auto; margin-right: auto; }
+
+    /* Live Camera Only Selfie Box (No Gallery Upload Allowed) */
+    .selfie-camera-box {
+      background: #14281d;
+      border: 2.5px solid #2e7d32;
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+    }
+    .camera-viewport {
+      width: 100%;
+      max-width: 260px;
+      aspect-ratio: 1 / 1;
+      margin: 0 auto 10px auto;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #0b1610;
+      border: 2px solid #a5d6a7;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #selfie-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* Natural selfie mirror preview */
+      display: none;
+    }
+    #photo-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    .camera-idle-msg {
+      color: #a5d6a7;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 16px;
+      line-height: 1.4;
+    }
+    .camera-idle-msg span {
+      display: block;
+      font-size: 32px;
+      margin-bottom: 6px;
+    }
+    .cam-action-btn {
+      width: 100%;
+      max-width: 260px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 11px;
+      font-family: 'Fredoka One', cursive;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      color: #ffffff;
+    }
+    .btn-open-cam {
+      background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%);
+      box-shadow: 0 4px 0 #1b5e20;
+    }
+    .btn-snap-selfie {
+      background: linear-gradient(180deg, #ff9800 0%, #e65100 100%);
+      box-shadow: 0 4px 0 #b23c00;
+      display: none;
+    }
+    .btn-retake-selfie {
+      background: linear-gradient(180deg, #78909c 0%, #546e7a 100%);
+      box-shadow: 0 4px 0 #37474f;
+      display: none;
+    }
+    .live-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #c8e6c9;
+      margin-top: 6px;
+    }
 
     button.action-btn {
       width: 100%;
@@ -108,7 +186,6 @@
       white-space: nowrap;
     }
 
-    /* Animated Moving Floating Alert */
     .floating-alert-backdrop {
       position: fixed;
       top: 0;
@@ -168,7 +245,6 @@
       50% { opacity: 0.72; }
     }
 
-    /* Dedicated QR Result Screen */
     #result-screen { display: none; }
 
     #qr-container {
@@ -240,11 +316,9 @@
     .status-loading { color: #1b5e20; background: #e8f5e9; }
     .status-success { color: #1b5e20; background: #c8e6c9; }
     
-    /* Footnote with Blue @dreivance LinkedIn Link */
     .footer-text { font-size: 11px; font-weight: bold; color: #558b2f; margin-top: 16px; letter-spacing: 0.4px; }
     .footer-link { color: #1565c0; text-decoration: underline; }
 
-    /* Email Confirmation Modal */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -352,10 +426,24 @@
         <input type="tel" id="contact" placeholder="e.g. 09171234567" required autocomplete="tel">
       </div>
 
+      <!-- LIVE CAMERA SELFIE CAPTURE ONLY (NO PHOTO LIBRARY UPLOAD) -->
       <div class="input-group">
-        <label for="selfie">Take a Selfie (For Verification)</label>
-        <input type="file" id="selfie" accept="image/*" capture="user">
-        <img id="photo-preview" class="photo-preview" alt="Selfie Preview">
+        <label>Live Selfie (Camera Capture Only)</label>
+        <div class="selfie-camera-box">
+          <div class="camera-viewport">
+            <div id="camera-idle-msg" class="camera-idle-msg">
+              <span>🤳</span>
+              Tap below to open front camera and take a live selfie
+            </div>
+            <video id="selfie-video" autoplay playsinline muted></video>
+            <img id="photo-preview" alt="Captured Selfie">
+          </div>
+
+          <button type="button" id="open-cam-btn" class="cam-action-btn btn-open-cam" onclick="startSelfieCamera()">📷 Open Camera</button>
+          <button type="button" id="snap-btn" class="cam-action-btn btn-snap-selfie" onclick="captureSelfie()">📸 Capture Selfie</button>
+          <button type="button" id="retake-btn" class="cam-action-btn btn-retake-selfie" onclick="retakeSelfie()">🔄 Retake Selfie</button>
+          <div class="live-badge">Live camera capture required • Gallery upload disabled</div>
+        </div>
       </div>
 
       <button class="action-btn btn-generate" id="generate-btn" onclick="promptEmailConfirmation()">Generate My QR Code</button>
@@ -427,40 +515,20 @@
 
     let base64Image = "";
     let finalDownloadDataUrl = "";
+    let activeMediaStream = null;
     const DEFAULT_DOMAIN = "unified-accounting.com";
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
+    const LOGO_PNG_PATH = "Unified%20Global%20Logo%202023-08.png";
 
-    // Crisp vector SVG matching the Unified Global logo (green gradient UG emblem + UNIFIED GLOBAL wordmark)
-    const UG_LOGO_SVG = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 245" width="240" height="245">
-        <defs>
-          <linearGradient id="ugGradOuter" x1="15%" y1="10%" x2="85%" y2="90%">
-            <stop offset="0%" stop-color="#c6df33"/>
-            <stop offset="45%" stop-color="#5ca428"/>
-            <stop offset="100%" stop-color="#176e20"/>
-          </linearGradient>
-          <linearGradient id="ugGradInner" x1="80%" y1="15%" x2="20%" y2="85%">
-            <stop offset="0%" stop-color="#c6df33"/>
-            <stop offset="55%" stop-color="#5ca428"/>
-            <stop offset="100%" stop-color="#1b7422"/>
-          </linearGradient>
-          <linearGradient id="ugShadow" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#0f5a18" stop-opacity="0.65"/>
-            <stop offset="100%" stop-color="#176e20" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <rect width="240" height="245" rx="22" fill="#ffffff"/>
-        <!-- Outer U Emblem -->
-        <path d="M 38 30 L 62 30 C 71 30 77 37 77 46 L 77 54 L 61 54 L 61 106 C 61 139 87 163 120 163 C 153 163 179 139 179 106 L 179 54 L 163 54 L 163 46 C 163 37 169 30 178 30 L 202 30 L 202 106 C 202 152 166 186 120 186 C 74 186 38 152 38 106 Z" fill="url(#ugGradOuter)"/>
-        <!-- Subtle lower-right curve accent on U -->
-        <path d="M 120 163 C 153 163 179 139 179 106 L 179 84 C 175 128 148 156 108 162 C 112 163 116 163 120 163 Z" fill="url(#ugShadow)"/>
-        <!-- Inner G Emblem -->
-        <path d="M 149 62 C 141 53 130 48 117 48 C 91 48 72 68 72 95 C 72 122 91 142 118 142 C 143 142 162 124 163 98 L 163 87 L 116 87 L 116 107 L 139 107 C 136 116 128 122 118 122 C 103 122 93 111 93 95 C 93 79 103 68 118 68 C 125 68 131 71 135 75 C 139 79 144 79 148 75 L 152 71 C 154 68 153 65 149 62 Z" fill="url(#ugGradInner)"/>
-        <!-- UNIFIED GLOBAL Wordmark -->
-        <text x="120" y="211" text-anchor="middle" font-family="'Quicksand', 'Segoe UI', Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="4" fill="#176e20">UNIFIED</text>
-        <text x="120" y="233" text-anchor="middle" font-family="'Quicksand', 'Segoe UI', Arial, sans-serif" font-size="21" font-weight="800" letter-spacing="3.5" fill="#176e20">GLOBAL</text>
-      </svg>
-    `;
+    // Stop camera automatically if user leaves tab or locks phone
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && activeMediaStream) {
+        stopSelfieCamera();
+      }
+    });
+    window.addEventListener('pagehide', () => {
+      if (activeMediaStream) stopSelfieCamera();
+    });
 
     const emailInput = document.getElementById('email');
     const suggestionPill = document.getElementById('domain-suggestion-pill');
@@ -502,37 +570,106 @@
       document.getElementById('banner-fallback-' + idx).style.display = 'block';
     }
 
-    document.getElementById('selfie').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+    // =========================================================================
+    // LIVE FRONT-CAMERA SELFIE CAPTURE (GALLERY / FILE PICKER BLOCKED)
+    // =========================================================================
+    async function startSelfieCamera() {
+      const openBtn = document.getElementById('open-cam-btn');
+      const snapBtn = document.getElementById('snap-btn');
+      const retakeBtn = document.getElementById('retake-btn');
+      const videoEl = document.getElementById('selfie-video');
+      const previewEl = document.getElementById('photo-preview');
+      const idleMsg = document.getElementById('camera-idle-msg');
 
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const MAX_SIZE = 800; 
-          let width = img.width, height = img.height;
+      document.getElementById('status-msg').style.display = 'none';
+      openBtn.disabled = true;
+      openBtn.innerText = "Opening Camera...";
 
-          if (width > height) {
-            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
-          } else {
-            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
-          }
+      try {
+        stopSelfieCamera();
 
-          canvas.width = width; canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "user" },
+            width: { ideal: 640 },
+            height: { ideal: 640 }
+          },
+          audio: false
+        });
 
-          base64Image = canvas.toDataURL('image/jpeg', 0.7); 
-          const preview = document.getElementById('photo-preview');
-          preview.src = base64Image;
-          preview.style.display = 'block';
-        };
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
+        activeMediaStream = stream;
+        videoEl.srcObject = stream;
+        await videoEl.play();
+
+        idleMsg.style.display = 'none';
+        previewEl.style.display = 'none';
+        videoEl.style.display = 'block';
+
+        openBtn.style.display = 'none';
+        retakeBtn.style.display = 'none';
+        snapBtn.style.display = 'inline-block';
+      } catch (err) {
+        console.error("Camera error:", err);
+        showStatus("Camera access is required to take a live selfie. Please allow camera permission in your browser settings.", "error");
+      } finally {
+        openBtn.disabled = false;
+        openBtn.innerText = "📷 Open Camera";
+      }
+    }
+
+    function stopSelfieCamera() {
+      if (activeMediaStream) {
+        activeMediaStream.getTracks().forEach(track => track.stop());
+        activeMediaStream = null;
+      }
+      const videoEl = document.getElementById('selfie-video');
+      if (videoEl) {
+        videoEl.srcObject = null;
+        videoEl.style.display = 'none';
+      }
+    }
+
+    function captureSelfie() {
+      const videoEl = document.getElementById('selfie-video');
+      const previewEl = document.getElementById('photo-preview');
+      const snapBtn = document.getElementById('snap-btn');
+      const retakeBtn = document.getElementById('retake-btn');
+
+      if (!videoEl.videoWidth || !videoEl.videoHeight) return;
+
+      const MAX_SIZE = 480;
+      const vw = videoEl.videoWidth;
+      const vh = videoEl.videoHeight;
+      const side = Math.min(vw, vh);
+      const sx = (vw - side) / 2;
+      const sy = (vh - side) / 2;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = MAX_SIZE;
+      canvas.height = MAX_SIZE;
+      const ctx = canvas.getContext('2d');
+
+      // Flip horizontally so the saved selfie matches the natural mirror preview
+      ctx.translate(MAX_SIZE, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoEl, sx, sy, side, side, 0, 0, MAX_SIZE, MAX_SIZE);
+
+      base64Image = canvas.toDataURL('image/jpeg', 0.65);
+
+      stopSelfieCamera();
+
+      previewEl.src = base64Image;
+      previewEl.style.display = 'block';
+      snapBtn.style.display = 'none';
+      retakeBtn.style.display = 'inline-block';
+    }
+
+    function retakeSelfie() {
+      base64Image = "";
+      document.getElementById('photo-preview').style.display = 'none';
+      document.getElementById('retake-btn').style.display = 'none';
+      startSelfieCamera();
+    }
 
     function showStatus(msg, type) {
       const statusEl = document.getElementById('status-msg');
@@ -552,7 +689,7 @@
       document.getElementById('status-msg').style.display = 'none';
 
       if (!email || !contact || !base64Image) {
-        showStatus("Please enter your Email Address, Contact Number, and take a Selfie.", "error");
+        showStatus("Please enter your Email Address, Contact Number, and capture a live Selfie.", "error");
         return;
       }
 
@@ -586,30 +723,40 @@
       btn.innerText = "Processing...";
       showFloatingLoader(true);
 
+      let tableFound = false;
+      let tableNumber = "Unassigned";
+      let attendeeName = "Guest";
+      let driveUrl = "";
+
       try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {
           method: "POST",
+          redirect: "follow",
           headers: { "Content-Type": "text/plain;charset=utf-8" }, 
           body: JSON.stringify({ email: email, image: base64Image })
         });
 
-        const result = await response.json();
+        const textResponse = await response.text();
+        const result = JSON.parse(textResponse);
 
-        if (result.success) {
-          const tableFound = result.tableFound === true;
-          const tableNumber = result.table || "Unassigned";
-          const attendeeName = result.name || "Guest";
-          await generateCustomQRCode(attendeeName, contact, email, result.url, tableNumber, tableFound);
-          
-          document.getElementById('form-screen').style.display = 'none';
-          document.getElementById('result-screen').style.display = 'block';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          throw new Error(result.error || "Failed to upload image.");
+        if (result && result.success) {
+          tableFound = result.tableFound === true;
+          tableNumber = result.table || "Unassigned";
+          attendeeName = result.name || "Guest";
+          driveUrl = result.url || "";
         }
       } catch (err) {
-        console.error(err);
-        showStatus("Error connecting to server. Please try again.", "error");
+        console.warn("Server sync warning:", err);
+      }
+
+      try {
+        await generateCustomQRCode(attendeeName, contact, email, driveUrl, tableNumber, tableFound);
+        document.getElementById('form-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (qrErr) {
+        console.error(qrErr);
+        showStatus("Error generating QR code. Please try again.", "error");
       } finally {
         showFloatingLoader(false);
         btn.disabled = false;
@@ -622,6 +769,86 @@
       document.getElementById('form-screen').style.display = 'block';
       document.getElementById('status-msg').style.display = 'none';
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound) {
+      const qrDataUrl = qrCanvas.toDataURL("image/png");
+      document.getElementById('final-qr-img').src = qrDataUrl;
+      document.getElementById('result-attendee-info').innerText = attendeeName !== "Guest" 
+        ? `${attendeeName} (${normalizedEmail})` 
+        : normalizedEmail;
+
+      const tableBox = document.getElementById('table-box');
+      const tableLabel = document.getElementById('table-box-label');
+      const tableDisplay = document.getElementById('assigned-table-display');
+
+      if (tableFound) {
+        tableBox.style.background = "#e8f5e9";
+        tableBox.style.borderColor = "#2e7d32";
+        tableLabel.style.display = "block";
+        tableDisplay.className = "table-number-value";
+        tableDisplay.innerText = tableNumber;
+      } else {
+        tableBox.style.background = "#fff3e0";
+        tableBox.style.borderColor = "#e65100";
+        tableLabel.style.display = "none";
+        tableDisplay.className = "table-not-found-note";
+        tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
+      }
+
+      const passCanvas = document.createElement('canvas');
+      passCanvas.width = 320;
+      passCanvas.height = 415;
+      const pCtx = passCanvas.getContext('2d');
+
+      pCtx.fillStyle = "#fffdf5";
+      pCtx.fillRect(0, 0, 320, 415);
+
+      pCtx.strokeStyle = "#2e7d32";
+      pCtx.lineWidth = 8;
+      pCtx.strokeRect(4, 4, 312, 407);
+
+      pCtx.fillStyle = "#e65100";
+      pCtx.font = "bold 20px sans-serif";
+      pCtx.textAlign = "center";
+      pCtx.fillText("UNIFIED FIESTA PASS", 160, 36);
+
+      pCtx.drawImage(qrCanvas, 40, 50, 240, 240);
+
+      pCtx.fillStyle = "#1b4332";
+      pCtx.font = "bold 15px sans-serif";
+      pCtx.fillText(attendeeName !== "Guest" ? attendeeName : normalizedEmail, 160, 312);
+
+      if (attendeeName !== "Guest") {
+        pCtx.fillStyle = "#2e7d32";
+        pCtx.font = "12px sans-serif";
+        pCtx.fillText(normalizedEmail, 160, 330);
+      }
+
+      if (tableFound) {
+        pCtx.fillStyle = "#e8f5e9";
+        pCtx.fillRect(45, 344, 230, 46);
+        pCtx.strokeStyle = "#2e7d32";
+        pCtx.lineWidth = 2;
+        pCtx.strokeRect(45, 344, 230, 46);
+
+        pCtx.fillStyle = "#2e7d32";
+        pCtx.font = "bold 16px sans-serif";
+        pCtx.fillText("TABLE: " + tableNumber, 160, 373);
+      } else {
+        pCtx.fillStyle = "#fff3e0";
+        pCtx.fillRect(25, 344, 270, 48);
+        pCtx.strokeStyle = "#e65100";
+        pCtx.lineWidth = 2;
+        pCtx.strokeRect(25, 344, 270, 48);
+
+        pCtx.fillStyle = "#bf360c";
+        pCtx.font = "bold 11px sans-serif";
+        pCtx.fillText("Table assignment not found.", 160, 364);
+        pCtx.fillText("Ask registration for your table #", 160, 380);
+      }
+
+      finalDownloadDataUrl = passCanvas.toDataURL("image/png");
     }
 
     function generateCustomQRCode(attendeeName, contact, email, driveUrl, tableNumber, tableFound) {
@@ -650,28 +877,25 @@
 
         setTimeout(() => {
           const rawCanvas = hiddenContainer.querySelector("canvas");
+          const qrCanvas = document.createElement('canvas');
+          qrCanvas.width = 240;
+          qrCanvas.height = 240;
+          const qCtx = qrCanvas.getContext('2d');
+
+          qCtx.drawImage(rawCanvas, 0, 0, 240, 240);
+
           const logoImg = new Image();
-          const svgBlob = new Blob([UG_LOGO_SVG], { type: 'image/svg+xml;charset=utf-8' });
-          const svgUrl = URL.createObjectURL(svgBlob);
-
           logoImg.onload = function() {
-            const qrCanvas = document.createElement('canvas');
-            qrCanvas.width = 240;
-            qrCanvas.height = 240;
-            const qCtx = qrCanvas.getContext('2d');
-
-            qCtx.drawImage(rawCanvas, 0, 0, 240, 240);
-
-            // Preserve original aspect ratio without stretching
             const maxBoxSize = 62;
-            const scale = Math.min(maxBoxSize / logoImg.width, maxBoxSize / logoImg.height);
-            const drawW = logoImg.width * scale;
-            const drawH = logoImg.height * scale;
-            const pad = 4;
+            const naturalW = logoImg.naturalWidth || logoImg.width || 62;
+            const naturalH = logoImg.naturalHeight || logoImg.height || 62;
+            const scale = Math.min(maxBoxSize / naturalW, maxBoxSize / naturalH);
+            const drawW = naturalW * scale;
+            const drawH = naturalH * scale;
+            const pad = 5;
             const x = (240 - drawW) / 2;
             const y = (240 - drawH) / 2;
 
-            // Clean white rounded badge behind logo so QR data modules remain unobstructed
             qCtx.fillStyle = "#ffffff";
             qCtx.beginPath();
             qCtx.roundRect(x - pad, y - pad, drawW + pad * 2, drawH + pad * 2, 10);
@@ -679,87 +903,14 @@
 
             qCtx.drawImage(logoImg, x, y, drawW, drawH);
 
-            const qrDataUrl = qrCanvas.toDataURL("image/png");
-            document.getElementById('final-qr-img').src = qrDataUrl;
-            document.getElementById('result-attendee-info').innerText = attendeeName !== "Guest" 
-              ? `${attendeeName} (${normalizedEmail})` 
-              : normalizedEmail;
-
-            const tableBox = document.getElementById('table-box');
-            const tableLabel = document.getElementById('table-box-label');
-            const tableDisplay = document.getElementById('assigned-table-display');
-
-            if (tableFound) {
-              tableBox.style.background = "#e8f5e9";
-              tableBox.style.borderColor = "#2e7d32";
-              tableLabel.style.display = "block";
-              tableDisplay.className = "table-number-value";
-              tableDisplay.innerText = tableNumber;
-            } else {
-              tableBox.style.background = "#fff3e0";
-              tableBox.style.borderColor = "#e65100";
-              tableLabel.style.display = "none";
-              tableDisplay.className = "table-not-found-note";
-              tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
-            }
-
-            const passCanvas = document.createElement('canvas');
-            passCanvas.width = 320;
-            passCanvas.height = 415;
-            const pCtx = passCanvas.getContext('2d');
-
-            pCtx.fillStyle = "#fffdf5";
-            pCtx.fillRect(0, 0, 320, 415);
-
-            pCtx.strokeStyle = "#2e7d32";
-            pCtx.lineWidth = 8;
-            pCtx.strokeRect(4, 4, 312, 407);
-
-            pCtx.fillStyle = "#e65100";
-            pCtx.font = "bold 20px sans-serif";
-            pCtx.textAlign = "center";
-            pCtx.fillText("UNIFIED FIESTA PASS", 160, 36);
-
-            pCtx.drawImage(qrCanvas, 40, 50, 240, 240);
-
-            pCtx.fillStyle = "#1b4332";
-            pCtx.font = "bold 15px sans-serif";
-            pCtx.fillText(attendeeName !== "Guest" ? attendeeName : normalizedEmail, 160, 312);
-
-            if (attendeeName !== "Guest") {
-              pCtx.fillStyle = "#2e7d32";
-              pCtx.font = "12px sans-serif";
-              pCtx.fillText(normalizedEmail, 160, 330);
-            }
-
-            if (tableFound) {
-              pCtx.fillStyle = "#e8f5e9";
-              pCtx.fillRect(45, 344, 230, 46);
-              pCtx.strokeStyle = "#2e7d32";
-              pCtx.lineWidth = 2;
-              pCtx.strokeRect(45, 344, 230, 46);
-
-              pCtx.fillStyle = "#2e7d32";
-              pCtx.font = "bold 16px sans-serif";
-              pCtx.fillText("TABLE: " + tableNumber, 160, 373);
-            } else {
-              pCtx.fillStyle = "#fff3e0";
-              pCtx.fillRect(25, 344, 270, 48);
-              pCtx.strokeStyle = "#e65100";
-              pCtx.lineWidth = 2;
-              pCtx.strokeRect(25, 344, 270, 48);
-
-              pCtx.fillStyle = "#bf360c";
-              pCtx.font = "bold 11px sans-serif";
-              pCtx.fillText("Table assignment not found.", 160, 364);
-              pCtx.fillText("Ask registration for your table #", 160, 380);
-            }
-
-            finalDownloadDataUrl = passCanvas.toDataURL("image/png");
-            URL.revokeObjectURL(svgUrl);
+            renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
             resolve();
           };
-          logoImg.src = svgUrl;
+          logoImg.onerror = function() {
+            renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
+            resolve();
+          };
+          logoImg.src = LOGO_PNG_PATH;
         }, 120);
       });
     }

@@ -94,7 +94,104 @@
       white-space: nowrap;
     }
 
-    #reader { width: 100%; border-radius: 12px; overflow: hidden; border: 3px solid #2e7d32; background: #000; }
+    /* Clean Organized Scanner Box & Custom Controls */
+    .scanner-wrapper {
+      background: #14281d;
+      border: 3px solid #2e7d32;
+      border-radius: 14px;
+      overflow: hidden;
+      padding-bottom: 14px;
+    }
+    #reader {
+      width: 100%;
+      min-height: 210px;
+      background: #0b1610;
+      position: relative;
+    }
+    #reader video {
+      border-radius: 0 !important;
+      object-fit: cover;
+    }
+    .camera-placeholder {
+      padding: 48px 16px;
+      color: #a5d6a7;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .camera-placeholder span.cam-icon {
+      font-size: 32px;
+    }
+    .scanner-controls {
+      padding: 12px 14px 2px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .camera-select-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #1f3b2c;
+      padding: 7px 10px;
+      border-radius: 10px;
+      border: 1px solid #2e7d32;
+    }
+    .camera-select-label {
+      color: #c8e6c9;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    #camera-select {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #a5d6a7;
+      background: #ffffff;
+      color: #1b4332;
+      font-family: 'Quicksand', sans-serif;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+    .btn-start-scan {
+      width: 100%;
+      padding: 13px 16px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Fredoka One', cursive;
+      font-size: 17px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: #ffffff;
+      background: linear-gradient(180deg, #ff9800 0%, #e65100 100%);
+      box-shadow: 0 4px 0 #b23c00;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .btn-start-scan:active {
+      transform: translateY(2px);
+    }
+    .btn-stop-scan {
+      width: 100%;
+      padding: 11px 16px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Fredoka One', cursive;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #ffffff;
+      background: linear-gradient(180deg, #ef5350 0%, #c62828 100%);
+      box-shadow: 0 4px 0 #8e0000;
+      cursor: pointer;
+      display: none;
+    }
 
     .status-msg { font-weight: bold; padding: 8px; border-radius: 8px; margin: 10px 0; display: none; font-size: 13px; }
     .status-success { background: #c8e6c9; color: #1b5e20; }
@@ -109,10 +206,66 @@
     th, td { padding: 6px 4px; text-align: left; border-bottom: 1px solid #e0e0e0; }
     th { background: #f1f8e9; color: #2e7d32; font-weight: bold; }
 
-    /* Verification & Duplicate Modals */
+    /* Modals (Verification, Duplicate, and Popping Success Alert) */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.72); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
     .modal-card { background: #fffdf5; border-radius: 18px; padding: 16px; width: 100%; max-width: 420px; text-align: center; border: 4px solid #2e7d32; max-height: 92vh; overflow-y: auto; }
     .modal-card h3 { font-family: 'Fredoka One', cursive; color: #e65100; font-size: 22px; margin: 0 0 12px 0; }
+
+    /* Popping Animated Check-In Success Modal */
+    .pop-in-card {
+      animation: popScaleBounce 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      border-color: #2e7d32;
+      background: linear-gradient(180deg, #ffffff 0%, #f1f8e9 100%);
+      padding: 22px 18px;
+    }
+    @keyframes popScaleBounce {
+      0% { transform: scale(0.45); opacity: 0; }
+      70% { transform: scale(1.06); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .success-badge-icon {
+      font-size: 46px;
+      line-height: 1;
+      margin-bottom: 8px;
+      display: inline-block;
+      animation: iconPulse 0.8s ease-in-out infinite alternate;
+    }
+    @keyframes iconPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.14); }
+    }
+    .success-attendee-name {
+      font-family: 'Fredoka One', cursive;
+      font-size: 22px;
+      color: #1b5e20;
+      margin: 6px 0 4px 0;
+      word-break: break-word;
+    }
+    .success-attendee-sub {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2e7d32;
+      margin-bottom: 12px;
+    }
+    .success-table-pill {
+      display: inline-block;
+      background: #ffe0b2;
+      border: 2px solid #e65100;
+      color: #bf360c;
+      font-family: 'Fredoka One', cursive;
+      font-size: 18px;
+      padding: 6px 16px;
+      border-radius: 12px;
+      margin-bottom: 18px;
+    }
+    .btn-scan-another {
+      width: 100%;
+      padding: 13px !important;
+      font-size: 16px !important;
+      background: linear-gradient(180deg, #ff9800 0%, #e65100 100%);
+      color: #fff;
+      box-shadow: 0 4px 0 #b23c00;
+    }
 
     /* Duplicate Warning Modal Styling */
     .duplicate-card { border-color: #e65100; }
@@ -162,7 +315,9 @@
 
 <div class="flag-banner"></div>
 
-<!-- Hidden preloaded media elements pointing directly to your GitHub MP4 files -->
+<!-- Hidden preloaded GitHub media files -->
+<video id="audio-error" src="Error%20sound.mp4" preload="auto" playsinline style="display:none;"></video>
+<audio id="audio-scan-beep" src="Scan%20Beep%20.mp3" preload="auto"></audio>
 <video id="audio-popper" src="party%20popper%20.mp4" preload="auto" playsinline style="display:none;"></video>
 <video id="audio-greeting" src="happy%20fiesta.mp4" preload="auto" playsinline style="display:none;"></video>
 
@@ -184,7 +339,27 @@
     </div>
 
     <div id="status" class="status-msg"></div>
-    <div id="reader"></div>
+
+    <!-- Clean Organized Scanner Area (No "Scan an Image File" link) -->
+    <div class="scanner-wrapper">
+      <div id="reader">
+        <div id="camera-placeholder" class="camera-placeholder">
+          <span class="cam-icon">📷</span>
+          <span>Camera is off to save battery</span>
+        </div>
+      </div>
+
+      <div class="scanner-controls">
+        <div class="camera-select-row">
+          <span class="camera-select-label">🎥 Camera:</span>
+          <select id="camera-select" onchange="onCameraSelectionChange()">
+            <option value="">Detecting cameras...</option>
+          </select>
+        </div>
+        <button id="start-scan-btn" class="btn-start-scan" onclick="startScanning()">▶ Start Scanning</button>
+        <button id="stop-scan-btn" class="btn-stop-scan" onclick="stopScanning()">⏹ Stop Scanning</button>
+      </div>
+    </div>
 
     <div class="actions">
       <button class="btn-excel" onclick="exportToExcel()">📥 Export Log</button>
@@ -215,7 +390,7 @@
   </div>
 </div>
 
-<!-- CUSTOM DUPLICATE WARNING MODAL ("Cancel" vs "Yes, scan again") -->
+<!-- CUSTOM DUPLICATE WARNING MODAL -->
 <div id="duplicate-modal" class="modal-overlay">
   <div class="modal-card duplicate-card">
     <h3>⚠️ Already Checked In</h3>
@@ -271,12 +446,26 @@
   </div>
 </div>
 
+<!-- POPPING ANIMATED CHECK-IN SUCCESS MODAL -->
+<div id="success-modal" class="modal-overlay">
+  <div class="modal-card pop-in-card">
+    <div class="success-badge-icon">🎉✅</div>
+    <h3>Check-In Successful!</h3>
+    <div class="success-attendee-name" id="success-name">-</div>
+    <div class="success-attendee-sub" id="success-email">-</div>
+    <div class="success-table-pill" id="success-table">TABLE: -</div>
+    <button class="btn-scan-another" onclick="closeSuccessAndScanAnother()">📷 Scan Another</button>
+  </div>
+</div>
+
 <script>
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
   
   let logs = JSON.parse(localStorage.getItem('attendance_logs') || '[]');
   let scannerDeviceName = localStorage.getItem('scanner_device_name') || "";
   
+  let html5QrCode = null;
+  let isScanning = false;
   let lastScannedText = "";
   let lastScannedTime = 0;
   let pendingRecord = null;
@@ -298,8 +487,29 @@
   document.addEventListener('DOMContentLoaded', () => {
     checkDeviceName();
     renderTable();
-    initScanner();
+    populateCameraList();
     loadVoices();
+  });
+
+  // =========================================================================
+  // AUTO-DISABLE CAMERA WHEN TAB IS CLOSED, HIDDEN, OR PHONE SCREEN LOCKS
+  // =========================================================================
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && isScanning) {
+      stopScanning(true);
+    }
+  });
+
+  window.addEventListener('pagehide', () => {
+    if (isScanning) {
+      stopScanning(true);
+    }
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (isScanning) {
+      stopScanning(true);
+    }
   });
 
   function checkDeviceName() {
@@ -325,66 +535,214 @@
   }
 
   // =========================================================================
-  // 1. DUPLICATE ERROR SOUND (Double-Pulse Game Show Buzz)
+  // CAMERA ENUMERATION & CLEAN START/STOP CONTROLS
   // =========================================================================
-  function playErrorBeep() {
+  async function populateCameraList() {
+    const selectEl = document.getElementById('camera-select');
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      if (devices && devices.length > 0) {
+        selectEl.innerHTML = devices.map((cam, idx) => {
+          const label = cam.label || `Camera ${idx + 1}`;
+          return `<option value="${cam.id}">${escapeHtml(label)}</option>`;
+        }).join('');
+
+        // Auto-select main back camera if available
+        const backCam = devices.find(d => {
+          const l = (d.label || "").toLowerCase();
+          return l.includes('back') && !l.includes('ultra') && !l.includes('telephoto');
+        }) || devices[devices.length - 1];
+
+        if (backCam) {
+          selectEl.value = backCam.id;
+        }
+      } else {
+        selectEl.innerHTML = '<option value="environment">Default Back Camera</option>';
+      }
+    } catch (err) {
+      selectEl.innerHTML = '<option value="environment">Default Back Camera</option>';
+    }
+  }
+
+  async function onCameraSelectionChange() {
+    if (isScanning) {
+      await stopScanning(false);
+      await startScanning();
+    }
+  }
+
+  async function startScanning() {
+    if (isScanning) return;
+
+    // Unlock audio elements on user tap so mobile browsers allow playback
+    unlockMediaElements();
+
+    const startBtn = document.getElementById('start-scan-btn');
+    const stopBtn = document.getElementById('stop-scan-btn');
+    const placeholder = document.getElementById('camera-placeholder');
+    const selectEl = document.getElementById('camera-select');
+
+    startBtn.disabled = true;
+    startBtn.innerText = "Starting Camera...";
+
+    try {
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader", {
+          formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+          verbose: false
+        });
+      }
+
+      if (placeholder) placeholder.style.display = 'none';
+
+      const selectedCameraId = selectEl.value;
+      const cameraConfig = (selectedCameraId && selectedCameraId !== "environment")
+        ? { deviceId: { exact: selectedCameraId } }
+        : { facingMode: "environment" };
+
+      await html5QrCode.start(
+        cameraConfig,
+        {
+          fps: 10,
+          qrbox: { width: 220, height: 220 }
+        },
+        onScanSuccess,
+        () => {}
+      );
+
+      isScanning = true;
+      startBtn.style.display = 'none';
+      stopBtn.style.display = 'block';
+
+      // Refresh camera labels now that permission is granted
+      if (selectEl.options.length <= 1) {
+        populateCameraList();
+      }
+    } catch (err) {
+      console.error("Camera start error:", err);
+      if (placeholder) placeholder.style.display = 'flex';
+      showStatus("⚠️ Could not access camera. Please allow camera permissions.", "warning");
+    } finally {
+      startBtn.disabled = false;
+      startBtn.innerText = "▶ Start Scanning";
+    }
+  }
+
+  async function stopScanning(autoStopped = false) {
+    const startBtn = document.getElementById('start-scan-btn');
+    const stopBtn = document.getElementById('stop-scan-btn');
+
+    if (html5QrCode && isScanning) {
+      try {
+        await html5QrCode.stop();
+        html5QrCode.clear();
+      } catch (e) {}
+    }
+
+    isScanning = false;
+    stopBtn.style.display = 'none';
+    startBtn.style.display = 'block';
+
+    const readerEl = document.getElementById('reader');
+    readerEl.innerHTML = `
+      <div id="camera-placeholder" class="camera-placeholder">
+        <span class="cam-icon">📷</span>
+        <span>${autoStopped ? "Camera paused automatically to save battery" : "Camera is off to save battery"}</span>
+      </div>
+    `;
+  }
+
+  function unlockMediaElements() {
+    ['audio-error', 'audio-scan-beep', 'audio-popper', 'audio-greeting'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.muted = true;
+        el.play().then(() => {
+          el.pause();
+          el.currentTime = 0;
+          el.muted = false;
+        }).catch(() => {
+          el.muted = false;
+        });
+      }
+    });
+  }
+
+  // =========================================================================
+  // SOUND EFFECTS:
+  // 1. Error sound.mp4 -> Duplicate scan
+  // 2. Scan Beep .mp3 -> Successful QR detection
+  // 3. party popper .mp4 + happy fiesta.mp4 -> Check-in confirmed
+  // =========================================================================
+  function playDuplicateErrorSound() {
+    const errEl = document.getElementById('audio-error');
+    if (errEl) {
+      errEl.muted = false;
+      errEl.currentTime = 0;
+      errEl.play().catch(() => playSynthDoubleBuzzFallback());
+    } else {
+      playSynthDoubleBuzzFallback();
+    }
+  }
+
+  function playSynthDoubleBuzzFallback() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioCtx();
       const now = ctx.currentTime;
-
-      const pulses = [
-        { start: 0.00, dur: 0.14, freq: 155, gain: 0.42 },
-        { start: 0.19, dur: 0.30, freq: 118, gain: 0.48 }
-      ];
-
-      pulses.forEach(p => {
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const filter = ctx.createBiquadFilter();
+      [155, 118].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-
-        osc1.type = 'sawtooth';
-        osc2.type = 'square';
-        osc1.frequency.setValueAtTime(p.freq, now + p.start);
-        osc2.frequency.setValueAtTime(p.freq * 1.015, now + p.start);
-
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(680, now + p.start);
-
-        osc1.connect(filter);
-        osc2.connect(filter);
-        filter.connect(gain);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now + i * 0.18);
+        gain.gain.setValueAtTime(0.4, now + i * 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.18 + 0.15);
+        osc.connect(gain);
         gain.connect(ctx.destination);
-
-        gain.gain.setValueAtTime(0.001, now + p.start);
-        gain.gain.linearRampToValueAtTime(p.gain, now + p.start + 0.015);
-        gain.gain.setValueAtTime(p.gain, now + p.start + p.dur - 0.04);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + p.start + p.dur);
-
-        osc1.start(now + p.start);
-        osc2.start(now + p.start);
-        osc1.stop(now + p.start + p.dur);
-        osc2.stop(now + p.start + p.dur);
+        osc.start(now + i * 0.18);
+        osc.stop(now + i * 0.18 + 0.15);
       });
     } catch(e) {}
   }
 
-  // =========================================================================
-  // 2. PLAY "party popper .mp4" FOLLOWED BY "happy fiesta.mp4"
-  // =========================================================================
+  function playScanSuccessBeep() {
+    const beepEl = document.getElementById('audio-scan-beep');
+    if (beepEl) {
+      beepEl.muted = false;
+      beepEl.currentTime = 0;
+      beepEl.play().catch(() => playSynthBeepFallback());
+    } else {
+      playSynthBeepFallback();
+    }
+  }
+
+  function playSynthBeepFallback() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1046.5, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.16);
+    } catch(e) {}
+  }
+
   function playChimeAndGreeting() {
     const popperEl = document.getElementById('audio-popper');
     const greetingEl = document.getElementById('audio-greeting');
 
     if (popperEl && greetingEl) {
-      // Reset both clips
       popperEl.pause();
       popperEl.currentTime = 0;
       greetingEl.pause();
       greetingEl.currentTime = 0;
 
-      // Unlock greetingEl synchronously during the user's tap gesture so iOS Safari allows delayed play
       greetingEl.muted = true;
       greetingEl.play().then(() => {
         greetingEl.pause();
@@ -400,46 +758,19 @@
         greetingStarted = true;
         greetingEl.muted = false;
         greetingEl.currentTime = 0;
-        greetingEl.play().catch(() => {
-          speakHappyFiestaFallback();
-        });
+        greetingEl.play().catch(() => speakHappyFiestaFallback());
       };
 
-      // Trigger "happy fiesta.mp4" when "party popper .mp4" finishes
       popperEl.onended = startGreeting;
-
-      // Also start "happy fiesta.mp4" at 1.25s so it blends right after the pop without trailing silence
       const overlapTimer = setTimeout(startGreeting, 1250);
 
       popperEl.play().catch(() => {
         clearTimeout(overlapTimer);
-        playSynthPartyPopperFallback();
         startGreeting();
       });
     } else {
-      playSynthPartyPopperFallback();
       speakHappyFiestaFallback();
     }
-  }
-
-  function playSynthPartyPopperFallback() {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioCtx();
-      const now = ctx.currentTime;
-
-      const popOsc = ctx.createOscillator();
-      const popGain = ctx.createGain();
-      popOsc.type = 'triangle';
-      popOsc.frequency.setValueAtTime(360, now);
-      popOsc.frequency.exponentialRampToValueAtTime(55, now + 0.08);
-      popGain.gain.setValueAtTime(0.65, now);
-      popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.10);
-      popOsc.connect(popGain);
-      popGain.connect(ctx.destination);
-      popOsc.start(now);
-      popOsc.stop(now + 0.10);
-    } catch(e) {}
   }
 
   function speakHappyFiestaFallback() {
@@ -461,6 +792,9 @@
     } catch(e) {}
   }
 
+  // =========================================================================
+  // QR PARSING & SCAN HANDLER
+  // =========================================================================
   function parseQRData(qrText) {
     try {
       const parsed = JSON.parse(qrText);
@@ -503,7 +837,7 @@
     const parsed = parseQRData(decodedText);
     
     if (!parsed || !parsed.valid) {
-      playErrorBeep();
+      playDuplicateErrorSound();
       showStatus("⚠️ Invalid QR/Barcode — Not a Unified Fiesta pass!", "warning");
       return;
     }
@@ -517,13 +851,16 @@
       isConfirming = true;
       duplicateCandidate = parsed;
 
-      playErrorBeep();
+      // Play Error sound.mp4 for duplicate scan
+      playDuplicateErrorSound();
       const displayLabel = parsed.name !== "Guest" ? `${parsed.name}\n(${parsed.email})` : parsed.email;
       document.getElementById('duplicate-attendee-info').innerText = displayLabel;
       document.getElementById('duplicate-modal').style.display = 'flex';
       return;
     }
 
+    // Play Scan Beep .mp3 when QR is successfully scanned
+    playScanSuccessBeep();
     openVerificationModal(parsed);
   }
 
@@ -540,6 +877,7 @@
     const candidate = duplicateCandidate;
     duplicateCandidate = null;
     if (candidate) {
+      playScanSuccessBeep();
       openVerificationModal(candidate);
     } else {
       isConfirming = false;
@@ -570,23 +908,24 @@
   async function confirmCheckIn() {
     if (!pendingRecord) return;
     
-    // Trigger "party popper .mp4" -> "happy fiesta.mp4" immediately on tap
+    // Trigger party popper .mp4 -> happy fiesta.mp4 immediately on tap
     playChimeAndGreeting();
 
     const confirmBtn = document.getElementById('confirm-btn');
     confirmBtn.disabled = true;
     confirmBtn.innerText = "Syncing...";
 
+    const checkedInRecord = { ...pendingRecord };
     const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const dateString = new Date().toLocaleDateString();
-    const normalizedEmail = pendingRecord.email.trim().toLowerCase();
+    const normalizedEmail = checkedInRecord.email.trim().toLowerCase();
 
     const record = {
       "#": logs.length + 1,
-      "Name": pendingRecord.name,
+      "Name": checkedInRecord.name,
       "Email": normalizedEmail,
-      "Table": pendingRecord.table,
-      "Contact": pendingRecord.contact,
+      "Table": checkedInRecord.table,
+      "Contact": checkedInRecord.contact,
       "Time": timeString,
       "Date": dateString,
       "Device": scannerDeviceName
@@ -596,41 +935,54 @@
     localStorage.setItem('attendance_logs', JSON.stringify(logs));
     renderTable();
 
+    // Hide verify modal and immediately show popping animated success modal
+    document.getElementById('confirm-modal').style.display = 'none';
+    pendingRecord = null;
+    confirmBtn.disabled = false;
+    confirmBtn.innerText = "✅ Confirm";
+
+    const displayName = checkedInRecord.name !== "Guest" ? checkedInRecord.name : normalizedEmail;
+    document.getElementById('success-name').innerText = displayName;
+    document.getElementById('success-email').innerText = checkedInRecord.name !== "Guest" ? normalizedEmail : "";
+    document.getElementById('success-table').innerText = `TABLE: ${checkedInRecord.table}`;
+    document.getElementById('success-modal').style.display = 'flex';
+
+    // Sync to Google Sheets in background
     try {
       await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           action: "log_attendance",
-          name: pendingRecord.name,
+          name: checkedInRecord.name,
           email: normalizedEmail,
-          contact: pendingRecord.contact,
-          image: pendingRecord.image || "",
+          contact: checkedInRecord.contact,
+          image: checkedInRecord.image || "",
           device: scannerDeviceName,
-          table: pendingRecord.table
+          table: checkedInRecord.table
         })
       });
-      showStatus(`✅ Checked in: ${pendingRecord.name !== "Guest" ? pendingRecord.name : normalizedEmail} (${pendingRecord.table})`, 'success');
     } catch(e) {
       console.error(e);
       showStatus(`⚠️ Saved locally (Sheet sync failed)`, 'warning');
     }
+  }
 
-    confirmBtn.disabled = false;
-    confirmBtn.innerText = "✅ Confirm";
-    closeModal();
+  function closeSuccessAndScanAnother() {
+    document.getElementById('success-modal').style.display = 'none';
+    lastScannedTime = Date.now();
+    setTimeout(() => { isConfirming = false; }, 1000);
+    if (!isScanning) {
+      startScanning();
+    }
   }
 
   function cancelCheckIn() {
     showStatus(`❌ Check-in canceled`, 'warning');
-    closeModal();
-  }
-
-  function closeModal() {
     document.getElementById('confirm-modal').style.display = 'none';
     pendingRecord = null;
     lastScannedTime = Date.now();
-    setTimeout(() => { isConfirming = false; }, 1800);
+    setTimeout(() => { isConfirming = false; }, 1500);
   }
 
   function showStatus(msg, type) {
@@ -685,20 +1037,6 @@
     if (password === "admin123") {
       logs = []; localStorage.removeItem('attendance_logs'); renderTable(); showStatus("✅ Local logs cleared.", "success");
     }
-  }
-
-  function initScanner() {
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader",
-      {
-        fps: 10,
-        qrbox: { width: 220, height: 220 },
-        facingMode: "environment",
-        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
-      },
-      false
-    );
-    html5QrcodeScanner.render(onScanSuccess);
   }
 </script>
 
