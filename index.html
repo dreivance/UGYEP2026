@@ -55,8 +55,44 @@
     h2 { font-family: 'Fredoka One', cursive; color: #e65100; text-transform: uppercase; margin: 8px 0 2px 0; font-size: 24px; letter-spacing: 0.5px; }
     p.sub { color: #2e7d32; font-weight: 700; margin-top: 0; font-size: 13px; margin-bottom: 12px; }
 
-    .device-bar { background: #e8f5e9; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; color: #1b5e20; margin-bottom: 12px; display: flex; justify-content: space-between; border: 1px solid #c8e6c9; }
-    .device-btn { background: none; border: none; color: #e65100; font-weight: bold; text-decoration: underline; cursor: pointer; }
+    .device-bar {
+      background: #e8f5e9;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #1b5e20;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #c8e6c9;
+    }
+    .device-label-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .device-btn {
+      flex: 0 0 auto;
+      width: auto;
+      padding: 0;
+      margin: 0;
+      background: none;
+      border: none;
+      color: #e65100;
+      font-family: 'Quicksand', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-decoration: underline;
+      cursor: pointer;
+      white-space: nowrap;
+    }
 
     #reader { width: 100%; border-radius: 12px; overflow: hidden; border: 3px solid #2e7d32; background: #000; }
 
@@ -65,7 +101,7 @@
     .status-warning { background: #ffe0b2; color: #e65100; }
 
     .actions { display: flex; gap: 8px; margin: 12px 0; }
-    button { flex: 1; padding: 10px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-family: 'Fredoka One', cursive; letter-spacing: 0.5px; font-size: 14px; text-transform: uppercase; }
+    .actions button, .modal-card button { flex: 1; padding: 10px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-family: 'Fredoka One', cursive; letter-spacing: 0.5px; font-size: 14px; text-transform: uppercase; }
     .btn-excel { background: #2e7d32; color: #fff; box-shadow: 0 4px 0 #1b5e20; }
     .btn-clear { background: #d32f2f; color: #fff; box-shadow: 0 4px 0 #b71c1c; }
     
@@ -73,10 +109,16 @@
     th, td { padding: 6px 4px; text-align: left; border-bottom: 1px solid #e0e0e0; }
     th { background: #f1f8e9; color: #2e7d32; font-weight: bold; }
 
-    /* Verification Modal */
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
+    /* Verification & Duplicate Modals */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.72); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
     .modal-card { background: #fffdf5; border-radius: 18px; padding: 16px; width: 100%; max-width: 420px; text-align: center; border: 4px solid #2e7d32; max-height: 92vh; overflow-y: auto; }
     .modal-card h3 { font-family: 'Fredoka One', cursive; color: #e65100; font-size: 22px; margin: 0 0 12px 0; }
+
+    /* Duplicate Warning Modal Styling */
+    .duplicate-card { border-color: #e65100; }
+    .duplicate-text { font-size: 14px; font-weight: 700; color: #1b4332; line-height: 1.45; margin-bottom: 16px; }
+    .duplicate-attendee-box { background: #fff3e0; border: 2px dashed #e65100; border-radius: 10px; padding: 10px; margin-bottom: 14px; font-weight: 700; color: #bf360c; font-size: 14px; word-break: break-word; }
+    .btn-rescan-yes { background: #e65100; color: #fff; box-shadow: 0 4px 0 #b23c00; font-size: 13px !important; }
 
     .modal-image-wrapper { width: 100%; margin-bottom: 12px; border-radius: 10px; overflow: hidden; border: 2px solid #2e7d32; background: #e8f5e9; }
     .modal-image { width: 100%; height: auto; max-height: 320px; object-fit: contain; display: block; }
@@ -133,7 +175,7 @@
     <p class="sub">Scan QR Code to Check-In Participants</p>
 
     <div class="device-bar">
-      <span>📱 Scanner: <span id="device-name-display">Not Set</span></span>
+      <span class="device-label-group">📱 Scanner: <span id="device-name-display">Not Set</span></span>
       <button class="device-btn" onclick="changeDeviceName()">Change</button>
     </div>
 
@@ -169,6 +211,23 @@
   </div>
 </div>
 
+<!-- CUSTOM DUPLICATE WARNING MODAL ("Cancel" vs "Yes, scan again") -->
+<div id="duplicate-modal" class="modal-overlay">
+  <div class="modal-card duplicate-card">
+    <h3>⚠️ Already Checked In</h3>
+    <div class="duplicate-attendee-box" id="duplicate-attendee-info">-</div>
+    <p class="duplicate-text">
+      This participant has ALREADY been scanned!<br><br>
+      Do you still want to re-scan / re-verify this participant?
+    </p>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn-cancel" onclick="rejectDuplicateScan()">Cancel</button>
+      <button class="btn-rescan-yes" onclick="acceptDuplicateScan()">Yes, scan again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ATTENDEE VERIFICATION MODAL -->
 <div id="confirm-modal" class="modal-overlay">
   <div class="modal-card">
     <h3>Verify Attendee</h3>
@@ -217,6 +276,7 @@
   let lastScannedText = "";
   let lastScannedTime = 0;
   let pendingRecord = null;
+  let duplicateCandidate = null;
   let isConfirming = false;
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -351,10 +411,11 @@
   }
 
   function onScanSuccess(decodedText) {
+    // Immediately ignore buffered camera frames while any modal is open or cooling down
     if (isConfirming) return;
 
     const now = Date.now();
-    if (decodedText === lastScannedText && (now - lastScannedTime) < 3000) return;
+    if (decodedText === lastScannedText && (now - lastScannedTime) < 4000) return;
     
     lastScannedText = decodedText;
     lastScannedTime = now;
@@ -373,20 +434,38 @@
     );
     
     if (isDuplicate) {
+      // Lock scanner immediately so buffered frames never stack duplicate modals
+      isConfirming = true;
+      duplicateCandidate = parsed;
+
       playErrorBeep();
-      const displayLabel = parsed.name !== "Guest" ? `${parsed.name} (${parsed.email})` : parsed.email;
-      showStatus(`⚠️ ${displayLabel} is ALREADY checked in!`, 'warning');
-      
-      setTimeout(() => {
-        const allowRescan = confirm(`⚠️ ${displayLabel} has ALREADY been scanned!\n\nDo you still want to re-scan / re-verify this participant?`);
-        if (allowRescan) {
-          openVerificationModal(parsed);
-        }
-      }, 400);
+      const displayLabel = parsed.name !== "Guest" ? `${parsed.name}\n(${parsed.email})` : parsed.email;
+      document.getElementById('duplicate-attendee-info').innerText = displayLabel;
+      document.getElementById('duplicate-modal').style.display = 'flex';
       return;
     }
 
     openVerificationModal(parsed);
+  }
+
+  function rejectDuplicateScan() {
+    document.getElementById('duplicate-modal').style.display = 'none';
+    duplicateCandidate = null;
+    lastScannedTime = Date.now();
+    showStatus("❌ Duplicate scan ignored", "warning");
+    // 2-second buffer after dismissing so lingering camera frames don't re-trigger
+    setTimeout(() => { isConfirming = false; }, 2000);
+  }
+
+  function acceptDuplicateScan() {
+    document.getElementById('duplicate-modal').style.display = 'none';
+    const candidate = duplicateCandidate;
+    duplicateCandidate = null;
+    if (candidate) {
+      openVerificationModal(candidate);
+    } else {
+      isConfirming = false;
+    }
   }
 
   function openVerificationModal(parsed) {
@@ -470,7 +549,8 @@
   function closeModal() {
     document.getElementById('confirm-modal').style.display = 'none';
     pendingRecord = null;
-    setTimeout(() => { isConfirming = false; }, 1200);
+    lastScannedTime = Date.now();
+    setTimeout(() => { isConfirming = false; }, 1800);
   }
 
   function showStatus(msg, type) {
