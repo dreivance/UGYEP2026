@@ -64,7 +64,6 @@
     
     .photo-preview { width: 100px; height: 100px; border-radius: 10px; object-fit: cover; border: 2px solid #a5d6a7; margin-top: 8px; display: none; margin-left: auto; margin-right: auto; }
 
-    /* Orange Fiesta Button matching original design */
     button {
       width: 100%;
       padding: 12px;
@@ -83,7 +82,45 @@
     
     .btn-download { background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%); color: white; box-shadow: 0 5px 0 #1b5e20; display: none; margin-top: 10px; }
 
-    #qr-container { margin: 15px auto; padding: 12px; background: #fff; border: 2px dashed #a5d6a7; border-radius: 12px; display: none; justify-content: center; }
+    /* QR Result Box + Table Badge */
+    #qr-container {
+      margin: 18px auto;
+      padding: 16px;
+      background: #ffffff;
+      border: 3px dashed #2e7d32;
+      border-radius: 16px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #final-qr-img {
+      max-width: 100%;
+      border-radius: 8px;
+      display: block;
+    }
+    .table-assignment-box {
+      margin-top: 12px;
+      background: #e8f5e9;
+      border: 2px solid #2e7d32;
+      border-radius: 12px;
+      padding: 8px 18px;
+      width: 100%;
+      max-width: 240px;
+    }
+    .table-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #2e7d32;
+      letter-spacing: 0.8px;
+    }
+    .table-number-value {
+      font-family: 'Fredoka One', cursive;
+      font-size: 22px;
+      color: #e65100;
+      margin-top: 2px;
+    }
     
     .status-msg { font-size: 13px; font-weight: bold; display: none; margin-bottom: 12px; padding: 8px; border-radius: 8px; }
     .status-error { color: #c62828; background: #ffebee; }
@@ -140,8 +177,16 @@
 
       <button class="btn-generate" id="generate-btn" onclick="processAndGenerate()">Generate My QR Code</button>
 
+      <!-- Hidden staging container for raw QRCode.js generation -->
+      <div id="qrcode-hidden" style="display:none;"></div>
+
+      <!-- Visible Final QR Card with Center UG Icon & Table Number -->
       <div id="qr-container">
-        <div id="qrcode"></div>
+        <img id="final-qr-img" src="" alt="Your Event QR Code">
+        <div class="table-assignment-box">
+          <div class="table-label">Assigned Table</div>
+          <div class="table-number-value" id="assigned-table-display">-</div>
+        </div>
       </div>
 
       <button class="btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save / Download QR Code</button>
@@ -152,7 +197,19 @@
 
   <script>
     let base64Image = "";
+    let finalDownloadDataUrl = "";
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
+
+    // Crisp vector SVG matching your UG monogram logo (Dark Green #296b47 background, White UG emblem)
+    const UG_LOGO_SVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+        <rect width="120" height="120" rx="18" fill="#296b47"/>
+        <!-- Outer U shape -->
+        <path d="M 16 24 L 34 24 C 37 24 39 26 39 29 L 39 36 L 32 36 L 32 68 C 32 84 44 95 60 95 C 76 95 88 84 88 68 L 88 36 L 81 36 L 81 29 C 81 26 83 24 86 24 L 104 24 L 104 68 C 104 92 85 110 60 110 C 35 110 16 92 16 68 Z" fill="#ffffff"/>
+        <!-- Inner G shape -->
+        <path d="M 74 44 C 70 39 65 37 59 37 C 46 37 37 47 37 60 C 37 73 46 83 59 83 C 71 83 80 75 81 63 L 81 56 L 58 56 L 58 68 L 67 68 C 65 71 62 72 59 72 C 52 72 48 67 48 60 C 48 53 52 48 59 48 C 63 48 66 49 68 52 Z" fill="#ffffff"/>
+      </svg>
+    `;
 
     function handleBannerError() {
       document.getElementById('banner-img').style.display = 'none';
@@ -215,8 +272,8 @@
       const fullName = `${firstName} ${lastName}`;
 
       btn.disabled = true;
-      btn.innerText = "Uploading Selfie... Please wait";
-      showStatus("Saving details... This may take 5-10 seconds.", "loading");
+      btn.innerText = "Generating QR & Checking Table...";
+      showStatus("Uploading selfie & looking up table assignment...", "loading");
 
       try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -228,48 +285,132 @@
         const result = await response.json();
 
         if (result.success) {
-          generateQRCode(fullName, contact, email, result.url);
-          showStatus("Success! Your QR code is ready.", "success");
+          const tableNumber = result.table || "Unassigned";
+          await generateCustomQRCode(fullName, contact, email, result.url, tableNumber);
+          showStatus("Success! Your QR code and table number are ready.", "success");
         } else {
           throw new Error(result.error || "Failed to upload image.");
         }
       } catch (err) {
         console.error(err);
-        showStatus("Error uploading photo. Please try again.", "error");
+        showStatus("Error connecting to server. Please try again.", "error");
       } finally {
         btn.disabled = false;
         btn.innerText = "Generate My QR Code";
       }
     }
 
-    function generateQRCode(name, contact, email, driveUrl) {
-      const payload = { n: name, c: contact, e: email, i: driveUrl };
-      const qrString = JSON.stringify(payload);
-      document.getElementById('qrcode').innerHTML = "";
+    function generateCustomQRCode(name, contact, email, driveUrl, tableNumber) {
+      return new Promise((resolve) => {
+        const payload = { n: name, c: contact, e: email, i: driveUrl, t: tableNumber };
+        const qrString = JSON.stringify(payload);
+        const hiddenContainer = document.getElementById('qrcode-hidden');
+        hiddenContainer.innerHTML = "";
 
-      new QRCode(document.getElementById("qrcode"), {
-        text: qrString,
-        width: 180, 
-        height: 180,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.M 
+        // Generate dark green QR with High Error Correction (Level H) so center logo never breaks scanning
+        new QRCode(hiddenContainer, {
+          text: qrString,
+          width: 240,
+          height: 240,
+          colorDark : "#1b5e20", // Dark Green QR color
+          colorLight : "#ffffff",
+          correctLevel : QRCode.CorrectLevel.H
+        });
+
+        setTimeout(() => {
+          const rawCanvas = hiddenContainer.querySelector("canvas");
+          const logoImg = new Image();
+          const svgBlob = new Blob([UG_LOGO_SVG], { type: 'image/svg+xml;charset=utf-8' });
+          const svgUrl = URL.createObjectURL(svgBlob);
+
+          logoImg.onload = function() {
+            // 1. Create on-screen QR with Center UG Logo
+            const qrCanvas = document.createElement('canvas');
+            qrCanvas.width = 240;
+            qrCanvas.height = 240;
+            const qCtx = qrCanvas.getContext('2d');
+
+            qCtx.drawImage(rawCanvas, 0, 0, 240, 240);
+
+            // Draw white rounded frame behind center logo for crisp contrast
+            const logoSize = 54;
+            const pad = 4;
+            const x = (240 - logoSize) / 2;
+            const y = (240 - logoSize) / 2;
+
+            qCtx.fillStyle = "#ffffff";
+            qCtx.beginPath();
+            qCtx.roundRect(x - pad, y - pad, logoSize + pad * 2, logoSize + pad * 2, 10);
+            qCtx.fill();
+
+            qCtx.drawImage(logoImg, x, y, logoSize, logoSize);
+
+            const qrDataUrl = qrCanvas.toDataURL("image/png");
+            document.getElementById('final-qr-img').src = qrDataUrl;
+            document.getElementById('assigned-table-display').innerText = tableNumber;
+
+            // 2. Build downloadable pass image containing QR + Name + Table Number
+            const passCanvas = document.createElement('canvas');
+            passCanvas.width = 320;
+            passCanvas.height = 390;
+            const pCtx = passCanvas.getContext('2d');
+
+            pCtx.fillStyle = "#fffdf5";
+            pCtx.fillRect(0, 0, 320, 390);
+
+            // Green border
+            pCtx.strokeStyle = "#2e7d32";
+            pCtx.lineWidth = 8;
+            pCtx.strokeRect(4, 4, 312, 382);
+
+            // Header text
+            pCtx.fillStyle = "#e65100";
+            pCtx.font = "bold 20px sans-serif";
+            pCtx.textAlign = "center";
+            pCtx.fillText("UNIFIED FIESTA PASS", 160, 36);
+
+            // Draw QR code with center logo
+            pCtx.drawImage(qrCanvas, 40, 50, 240, 240);
+
+            // Attendee Name
+            pCtx.fillStyle = "#1b4332";
+            pCtx.font = "bold 16px sans-serif";
+            pCtx.fillText(name, 160, 316);
+
+            // Assigned Table Badge
+            pCtx.fillStyle = "#e8f5e9";
+            pCtx.fillRect(45, 330, 230, 42);
+            pCtx.strokeStyle = "#2e7d32";
+            pCtx.lineWidth = 2;
+            pCtx.strokeRect(45, 330, 230, 42);
+
+            pCtx.fillStyle = "#2e7d32";
+            pCtx.font = "bold 16px sans-serif";
+            pCtx.fillText("TABLE: " + tableNumber, 160, 357);
+
+            finalDownloadDataUrl = passCanvas.toDataURL("image/png");
+
+            // Reveal container & scroll to focus
+            const qrContainer = document.getElementById('qr-container');
+            qrContainer.style.display = 'flex';
+            document.getElementById('download-btn').style.display = 'block';
+            qrContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            URL.revokeObjectURL(svgUrl);
+            resolve();
+          };
+          logoImg.src = svgUrl;
+        }, 120);
       });
-
-      const qrContainer = document.getElementById('qr-container');
-      qrContainer.style.display = 'flex';
-      document.getElementById('download-btn').style.display = 'block';
-      qrContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function downloadQR() {
       const firstName = document.getElementById('firstName').value.trim();
       const lastName = document.getElementById('lastName').value.trim();
-      const img = document.querySelector("#qrcode img");
-      if (img && img.src) {
+      if (finalDownloadDataUrl) {
         const link = document.createElement('a');
         link.download = `Fiesta_QR_${firstName}_${lastName}.png`;
-        link.href = img.src;
+        link.href = finalDownloadDataUrl;
         link.click();
       }
     }
