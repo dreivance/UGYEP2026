@@ -162,6 +162,10 @@
 
 <div class="flag-banner"></div>
 
+<!-- Hidden preloaded media elements pointing directly to your GitHub MP4 files -->
+<video id="audio-popper" src="party%20popper%20.mp4" preload="auto" playsinline style="display:none;"></video>
+<video id="audio-greeting" src="happy%20fiesta.mp4" preload="auto" playsinline style="display:none;"></video>
+
 <div class="container">
   <div class="card">
     <div class="banner-container">
@@ -278,14 +282,24 @@
   let pendingRecord = null;
   let duplicateCandidate = null;
   let isConfirming = false;
+  let cachedVoices = [];
+
+  function loadVoices() {
+    if ('speechSynthesis' in window) {
+      cachedVoices = window.speechSynthesis.getVoices();
+    }
+  }
+
+  if ('speechSynthesis' in window) {
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
 
   document.addEventListener('DOMContentLoaded', () => {
     checkDeviceName();
     renderTable();
     initScanner();
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-    }
+    loadVoices();
   });
 
   function checkDeviceName() {
@@ -311,23 +325,14 @@
   }
 
   // =========================================================================
-  // 1. DUPLICATE ERROR SOUND (Double-Pulse Game Show Buzz matching video_1)
+  // 1. DUPLICATE ERROR SOUND (Double-Pulse Game Show Buzz)
   // =========================================================================
   function playErrorBeep() {
-    // Try optional local file 'error.mp3' first; seamlessly fallback to Web Audio buzzer
-    const audioFile = new Audio('error.mp3');
-    audioFile.play().catch(() => {
-      playSynthDoubleBuzz();
-    });
-  }
-
-  function playSynthDoubleBuzz() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioCtx();
       const now = ctx.currentTime;
 
-      // Two distinct descending low buzzer pulses ("bzz-bzzzt")
       const pulses = [
         { start: 0.00, dur: 0.14, freq: 155, gain: 0.42 },
         { start: 0.19, dur: 0.30, freq: 118, gain: 0.48 }
@@ -342,7 +347,7 @@
         osc1.type = 'sawtooth';
         osc2.type = 'square';
         osc1.frequency.setValueAtTime(p.freq, now + p.start);
-        osc2.frequency.setValueAtTime(p.freq * 1.015, now + p.start); // Slight detune for rich buzzer rasp
+        osc2.frequency.setValueAtTime(p.freq * 1.015, now + p.start);
 
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(680, now + p.start);
@@ -366,94 +371,94 @@
   }
 
   // =========================================================================
-  // 2. PARTY POPPER BURST (video_3) + "HAPPY FIESTA!" VOICE (video_2)
+  // 2. PLAY "party popper .mp4" FOLLOWED BY "happy fiesta.mp4"
   // =========================================================================
   function playChimeAndGreeting() {
-    // Try optional local files 'popper.mp3' + 'happy-fiesta.mp3' first; fallback to synth + TTS
-    const popperFile = new Audio('popper.mp3');
-    const greetingFile = new Audio('happy-fiesta.mp3');
+    const popperEl = document.getElementById('audio-popper');
+    const greetingEl = document.getElementById('audio-greeting');
 
-    popperFile.onended = () => {
-      greetingFile.play().catch(() => speakHappyFiesta());
-    };
+    if (popperEl && greetingEl) {
+      // Reset both clips
+      popperEl.pause();
+      popperEl.currentTime = 0;
+      greetingEl.pause();
+      greetingEl.currentTime = 0;
 
-    popperFile.play().catch(() => {
-      playSynthPartyPopper();
-      setTimeout(() => {
-        greetingFile.play().catch(() => speakHappyFiesta());
-      }, 420);
-    });
+      // Unlock greetingEl synchronously during the user's tap gesture so iOS Safari allows delayed play
+      greetingEl.muted = true;
+      greetingEl.play().then(() => {
+        greetingEl.pause();
+        greetingEl.currentTime = 0;
+        greetingEl.muted = false;
+      }).catch(() => {
+        greetingEl.muted = false;
+      });
+
+      let greetingStarted = false;
+      const startGreeting = () => {
+        if (greetingStarted) return;
+        greetingStarted = true;
+        greetingEl.muted = false;
+        greetingEl.currentTime = 0;
+        greetingEl.play().catch(() => {
+          speakHappyFiestaFallback();
+        });
+      };
+
+      // Trigger "happy fiesta.mp4" when "party popper .mp4" finishes
+      popperEl.onended = startGreeting;
+
+      // Also start "happy fiesta.mp4" at 1.25s so it blends right after the pop without trailing silence
+      const overlapTimer = setTimeout(startGreeting, 1250);
+
+      popperEl.play().catch(() => {
+        clearTimeout(overlapTimer);
+        playSynthPartyPopperFallback();
+        startGreeting();
+      });
+    } else {
+      playSynthPartyPopperFallback();
+      speakHappyFiestaFallback();
+    }
   }
 
-  function playSynthPartyPopper() {
+  function playSynthPartyPopperFallback() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioCtx();
       const now = ctx.currentTime;
 
-      // Part A: Crisp "POP!" impulse thump
       const popOsc = ctx.createOscillator();
       const popGain = ctx.createGain();
       popOsc.type = 'triangle';
-      popOsc.frequency.setValueAtTime(340, now);
-      popOsc.frequency.exponentialRampToValueAtTime(52, now + 0.09);
-
-      popGain.gain.setValueAtTime(0.75, now);
-      popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
-
+      popOsc.frequency.setValueAtTime(360, now);
+      popOsc.frequency.exponentialRampToValueAtTime(55, now + 0.08);
+      popGain.gain.setValueAtTime(0.65, now);
+      popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.10);
       popOsc.connect(popGain);
       popGain.connect(ctx.destination);
       popOsc.start(now);
-      popOsc.stop(now + 0.11);
-
-      // Part B: Confetti crackle & sparkling air burst
-      const bufferSize = Math.floor(ctx.sampleRate * 0.45);
-      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const output = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        // Modulated burst envelope for realistic paper/confetti flutter
-        const flutter = (i % 180 < 90) ? 1.0 : 0.45;
-        output[i] = (Math.random() * 2 - 1) * flutter;
-      }
-
-      const whiteNoise = ctx.createBufferSource();
-      whiteNoise.buffer = noiseBuffer;
-
-      const bandpass = ctx.createBiquadFilter();
-      bandpass.type = 'bandpass';
-      bandpass.frequency.setValueAtTime(2400, now);
-      bandpass.frequency.exponentialRampToValueAtTime(4200, now + 0.35);
-      bandpass.Q.value = 0.9;
-
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.65, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-      whiteNoise.connect(bandpass);
-      bandpass.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-
-      whiteNoise.start(now);
-      whiteNoise.stop(now + 0.45);
+      popOsc.stop(now + 0.10);
     } catch(e) {}
   }
 
-  function speakHappyFiesta() {
+  function speakHappyFiestaFallback() {
     if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+      const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => {
+        const n = v.name.toLowerCase();
+        return (n.includes('samantha') || n.includes('natural') || n.includes('neural') || n.includes('female') || n.includes('google us english') || n.includes('zira') || n.includes('aria') || n.includes('jenny')) && !n.includes('male');
+      }) || voices.find(v => v.lang && v.lang.startsWith('en')) || null;
 
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => {
-      const n = v.name.toLowerCase();
-      return (n.includes('natural') || n.includes('neural') || n.includes('female') || n.includes('samantha') || n.includes('google us english') || n.includes('zira') || n.includes('aria') || n.includes('jenny')) && !n.includes('male');
-    }) || voices.find(v => v.lang.startsWith('en')) || null;
-
-    const u = new SpeechSynthesisUtterance("Happy Fiesta!");
-    u.pitch = 1.45;
-    u.rate = 1.25;
-    u.volume = 1.0;
-    if (preferredVoice) u.voice = preferredVoice;
-    window.speechSynthesis.speak(u);
+      const u = new SpeechSynthesisUtterance("Happy Fiesta!");
+      u.pitch = 1.45;
+      u.rate = 1.18;
+      u.volume = 1.0;
+      if (preferredVoice) u.voice = preferredVoice;
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
   }
 
   function parseQRData(qrText) {
@@ -564,11 +569,13 @@
 
   async function confirmCheckIn() {
     if (!pendingRecord) return;
+    
+    // Trigger "party popper .mp4" -> "happy fiesta.mp4" immediately on tap
+    playChimeAndGreeting();
+
     const confirmBtn = document.getElementById('confirm-btn');
     confirmBtn.disabled = true;
     confirmBtn.innerText = "Syncing...";
-
-    playChimeAndGreeting();
 
     const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const dateString = new Date().toLocaleDateString();
