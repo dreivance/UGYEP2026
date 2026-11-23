@@ -52,13 +52,21 @@
     .banner-fallback h1 { margin: 0; font-family: 'Fredoka One', cursive; font-size: 22px; color: #fde047; }
 
     h2 { font-family: 'Fredoka One', cursive; color: #e65100; text-transform: uppercase; margin: 8px 0 2px 0; font-size: 26px; letter-spacing: 0.5px; }
-    p.sub { color: #2e7d32; font-weight: 700; margin-top: 0; font-size: 13px; margin-bottom: 20px; }
+    p.sub { color: #2e7d32; font-weight: 700; margin-top: 0; font-size: 13px; margin-bottom: 18px; }
     
     .input-group { margin-bottom: 14px; text-align: left; }
     
     label { display: block; font-weight: 700; margin-bottom: 4px; font-size: 12px; color: #2e7d32; text-transform: uppercase; }
     input { width: 100%; padding: 10px 12px; border: 2px solid #a5d6a7; border-radius: 10px; font-size: 14px; background: #fff; font-family: inherit; }
     input:focus { outline: none; border-color: #e65100; box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.15); }
+
+    .email-hint {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #bf360c;
+      margin-top: 5px;
+      line-height: 1.35;
+    }
 
     /* Domain Autocomplete Pill */
     .domain-suggestion {
@@ -75,15 +83,9 @@
       width: fit-content;
       transition: background 0.15s, transform 0.1s;
     }
-    .domain-suggestion:hover {
-      background: #c8e6c9;
-    }
-    .domain-suggestion:active {
-      transform: scale(0.97);
-    }
-    .domain-suggestion span {
-      color: #e65100;
-    }
+    .domain-suggestion:hover { background: #c8e6c9; }
+    .domain-suggestion:active { transform: scale(0.97); }
+    .domain-suggestion span { color: #e65100; }
     
     .photo-preview { width: 100px; height: 100px; border-radius: 10px; object-fit: cover; border: 2px solid #a5d6a7; margin-top: 8px; display: none; margin-left: auto; margin-right: auto; }
 
@@ -98,20 +100,24 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       transition: 0.2s;
-      margin-top: 6px;
+      margin-top: 8px;
     }
     .btn-generate { background: linear-gradient(180deg, #ff8f00 0%, #e65100 100%); color: white; box-shadow: 0 5px 0 #b23c00; }
     .btn-generate:disabled { background: #b0bec5; box-shadow: none; cursor: not-allowed; }
     
-    .btn-download { background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%); color: white; box-shadow: 0 5px 0 #1b5e20; display: none; margin-top: 10px; }
+    .btn-download { background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%); color: white; box-shadow: 0 5px 0 #1b5e20; margin-top: 10px; }
+    .btn-back { background: linear-gradient(180deg, #78909c 0%, #546e7a 100%); color: white; box-shadow: 0 5px 0 #37474f; margin-top: 10px; font-size: 14px; }
+
+    /* Dedicated QR Result Screen */
+    #result-screen { display: none; }
 
     #qr-container {
-      margin: 18px auto;
+      margin: 12px auto;
       padding: 16px;
       background: #ffffff;
       border: 3px dashed #2e7d32;
       border-radius: 16px;
-      display: none;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -121,8 +127,14 @@
       border-radius: 8px;
       display: block;
     }
+    .attendee-summary-tag {
+      margin-top: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #1b4332;
+    }
     .table-assignment-box {
-      margin-top: 12px;
+      margin-top: 10px;
       background: #e8f5e9;
       border: 2px solid #2e7d32;
       border-radius: 12px;
@@ -150,13 +162,25 @@
       line-height: 1.4;
       margin-top: 2px;
     }
+
+    .save-instruction-box {
+      background: #e3f2fd;
+      border: 1.5px solid #1e88e5;
+      color: #0d47a1;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 12px;
+      line-height: 1.4;
+    }
     
     .status-msg { font-size: 13px; font-weight: bold; display: none; margin-bottom: 12px; padding: 8px; border-radius: 8px; }
     .status-error { color: #c62828; background: #ffebee; }
     .status-loading { color: #1b5e20; background: #e8f5e9; }
     .status-success { color: #1b5e20; background: #c8e6c9; }
     
-    .footer-text { font-size: 11px; font-weight: bold; color: #a5d6a7; margin-top: 15px; letter-spacing: 1px; }
+    .footer-text { font-size: 11px; font-weight: bold; color: #558b2f; margin-top: 16px; letter-spacing: 0.5px; }
   </style>
 </head>
 <body>
@@ -164,10 +188,11 @@
   <div class="flag-banner"></div>
 
   <div class="container">
-    <div class="card">
+    <!-- SCREEN 1: REGISTRATION FORM -->
+    <div class="card" id="form-screen">
       <div class="banner-container">
-        <img id="banner-img" src="banner.jpg" alt="Unified Fiesta" class="event-banner" onerror="handleBannerError()">
-        <div id="banner-fallback" class="banner-fallback">
+        <img id="banner-img-1" src="banner.jpg" alt="Unified Fiesta" class="event-banner" onerror="handleBannerError('1')">
+        <div id="banner-fallback-1" class="banner-fallback">
           <h1>🎉 UNIFIED FIESTA 🎉</h1>
         </div>
       </div>
@@ -184,6 +209,7 @@
         <div id="domain-suggestion-pill" class="domain-suggestion" onclick="applyDomainSuggestion()">
           Tap to complete: <span id="suggested-email-text"></span>
         </div>
+        <div class="email-hint">⚠️ Please double-check your email address to be sure — it serves as your unique ID.</div>
       </div>
 
       <div class="input-group">
@@ -198,21 +224,43 @@
       </div>
 
       <button class="action-btn btn-generate" id="generate-btn" onclick="processAndGenerate()">Generate My QR Code</button>
+      
+      <div class="footer-text">Developed by Drei Delosa (@dreivance)</div>
+    </div>
 
-      <div id="qrcode-hidden" style="display:none;"></div>
+    <!-- SCREEN 2: DEDICATED QR RESULT WINDOW -->
+    <div class="card" id="result-screen">
+      <div class="banner-container">
+        <img id="banner-img-2" src="banner.jpg" alt="Unified Fiesta" class="event-banner" onerror="handleBannerError('2')">
+        <div id="banner-fallback-2" class="banner-fallback">
+          <h1>🎉 UNIFIED FIESTA 🎉</h1>
+        </div>
+      </div>
+
+      <h2>Your Fiesta Pass</h2>
+      <p class="sub">Present this QR code at the entrance gate</p>
 
       <div id="qr-container">
         <img id="final-qr-img" src="" alt="Your Event QR Code">
+        <div class="attendee-summary-tag" id="result-attendee-info"></div>
         <div class="table-assignment-box" id="table-box">
           <div class="table-label" id="table-box-label">Assigned Table</div>
           <div class="table-number-value" id="assigned-table-display">-</div>
         </div>
       </div>
 
-      <button class="action-btn btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save / Download QR Code</button>
-      
-      <div class="footer-text">UNIFIED GLOBAL · UNIFIED FIESTA</div>
+      <div class="save-instruction-box">
+        📱 Tip: You can take a <strong>screenshot</strong> right now or tap the button below to <strong>save the QR image</strong> to your phone!
+      </div>
+
+      <button class="action-btn btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save QR Image to Phone</button>
+      <button class="action-btn btn-back" onclick="backToForm()">← Back to Form / Generate Again</button>
+
+      <div class="footer-text">Developed by Drei Delosa (@dreivance)</div>
     </div>
+
+    <!-- Hidden staging container for raw QRCode.js generation -->
+    <div id="qrcode-hidden" style="display:none;"></div>
   </div>
 
   <script>
@@ -244,7 +292,6 @@
         const typedDomain = val.substring(atIndex + 1).toLowerCase();
         const fullSuggestion = `${prefix}@${DEFAULT_DOMAIN}`;
 
-        // Show suggestion pill if domain starts matching default domain and isn't already completed
         if (DEFAULT_DOMAIN.startsWith(typedDomain) && typedDomain !== DEFAULT_DOMAIN) {
           suggestedText.innerText = fullSuggestion;
           suggestionPill.style.display = 'inline-block';
@@ -266,9 +313,9 @@
       document.getElementById('contact').focus();
     }
 
-    function handleBannerError() {
-      document.getElementById('banner-img').style.display = 'none';
-      document.getElementById('banner-fallback').style.display = 'block';
+    function handleBannerError(idx) {
+      document.getElementById('banner-img-' + idx).style.display = 'none';
+      document.getElementById('banner-fallback-' + idx).style.display = 'block';
     }
 
     document.getElementById('selfie').addEventListener('change', function(e) {
@@ -338,8 +385,13 @@
         if (result.success) {
           const tableFound = result.tableFound === true;
           const tableNumber = result.table || "Unassigned";
-          await generateCustomQRCode(contact, email, result.url, tableNumber, tableFound);
-          showStatus("Success! Your QR code is ready.", "success");
+          const attendeeName = result.name || "Guest";
+          await generateCustomQRCode(attendeeName, contact, email, result.url, tableNumber, tableFound);
+          
+          // Switch to dedicated QR result screen
+          document.getElementById('form-screen').style.display = 'none';
+          document.getElementById('result-screen').style.display = 'block';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
           throw new Error(result.error || "Failed to upload image.");
         }
@@ -352,10 +404,25 @@
       }
     }
 
-    function generateCustomQRCode(contact, email, driveUrl, tableNumber, tableFound) {
+    function backToForm() {
+      document.getElementById('result-screen').style.display = 'none';
+      document.getElementById('form-screen').style.display = 'block';
+      document.getElementById('status-msg').style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function generateCustomQRCode(attendeeName, contact, email, driveUrl, tableNumber, tableFound) {
       return new Promise((resolve) => {
         const normalizedEmail = email.trim().toLowerCase();
-        const payload = { n: normalizedEmail, c: contact, e: normalizedEmail, i: driveUrl, t: tableNumber };
+        // Embed verified Event Flag ('app': 'UG_FIESTA'), Name, Contact, Email, Selfie URL, and Table
+        const payload = {
+          app: "UG_FIESTA",
+          n: attendeeName,
+          c: contact,
+          e: normalizedEmail,
+          i: driveUrl,
+          t: tableNumber
+        };
         const qrString = JSON.stringify(payload);
         const hiddenContainer = document.getElementById('qrcode-hidden');
         hiddenContainer.innerHTML = "";
@@ -397,6 +464,9 @@
 
             const qrDataUrl = qrCanvas.toDataURL("image/png");
             document.getElementById('final-qr-img').src = qrDataUrl;
+            document.getElementById('result-attendee-info').innerText = attendeeName !== "Guest" 
+              ? `${attendeeName} (${normalizedEmail})` 
+              : normalizedEmail;
 
             const tableBox = document.getElementById('table-box');
             const tableLabel = document.getElementById('table-box-label');
@@ -416,17 +486,18 @@
               tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
             }
 
+            // Build downloadable pass image
             const passCanvas = document.createElement('canvas');
             passCanvas.width = 320;
-            passCanvas.height = 395;
+            passCanvas.height = 415;
             const pCtx = passCanvas.getContext('2d');
 
             pCtx.fillStyle = "#fffdf5";
-            pCtx.fillRect(0, 0, 320, 395);
+            pCtx.fillRect(0, 0, 320, 415);
 
             pCtx.strokeStyle = "#2e7d32";
             pCtx.lineWidth = 8;
-            pCtx.strokeRect(4, 4, 312, 387);
+            pCtx.strokeRect(4, 4, 312, 407);
 
             pCtx.fillStyle = "#e65100";
             pCtx.font = "bold 20px sans-serif";
@@ -436,39 +507,39 @@
             pCtx.drawImage(qrCanvas, 40, 50, 240, 240);
 
             pCtx.fillStyle = "#1b4332";
-            pCtx.font = "bold 14px sans-serif";
-            pCtx.fillText(normalizedEmail, 160, 315);
+            pCtx.font = "bold 15px sans-serif";
+            pCtx.fillText(attendeeName !== "Guest" ? attendeeName : normalizedEmail, 160, 312);
+
+            if (attendeeName !== "Guest") {
+              pCtx.fillStyle = "#2e7d32";
+              pCtx.font = "12px sans-serif";
+              pCtx.fillText(normalizedEmail, 160, 330);
+            }
 
             if (tableFound) {
               pCtx.fillStyle = "#e8f5e9";
-              pCtx.fillRect(45, 330, 230, 44);
+              pCtx.fillRect(45, 344, 230, 46);
               pCtx.strokeStyle = "#2e7d32";
               pCtx.lineWidth = 2;
-              pCtx.strokeRect(45, 330, 230, 44);
+              pCtx.strokeRect(45, 344, 230, 46);
 
               pCtx.fillStyle = "#2e7d32";
               pCtx.font = "bold 16px sans-serif";
-              pCtx.fillText("TABLE: " + tableNumber, 160, 358);
+              pCtx.fillText("TABLE: " + tableNumber, 160, 373);
             } else {
               pCtx.fillStyle = "#fff3e0";
-              pCtx.fillRect(25, 330, 270, 46);
+              pCtx.fillRect(25, 344, 270, 48);
               pCtx.strokeStyle = "#e65100";
               pCtx.lineWidth = 2;
-              pCtx.strokeRect(25, 330, 270, 46);
+              pCtx.strokeRect(25, 344, 270, 48);
 
               pCtx.fillStyle = "#bf360c";
               pCtx.font = "bold 11px sans-serif";
-              pCtx.fillText("Table assignment not found.", 160, 349);
-              pCtx.fillText("Ask registration for your table #", 160, 365);
+              pCtx.fillText("Table assignment not found.", 160, 364);
+              pCtx.fillText("Ask registration for your table #", 160, 380);
             }
 
             finalDownloadDataUrl = passCanvas.toDataURL("image/png");
-
-            const qrContainer = document.getElementById('qr-container');
-            qrContainer.style.display = 'flex';
-            document.getElementById('download-btn').style.display = 'block';
-            qrContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
             URL.revokeObjectURL(svgUrl);
             resolve();
           };

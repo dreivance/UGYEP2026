@@ -73,14 +73,16 @@
     th, td { padding: 6px 4px; text-align: left; border-bottom: 1px solid #e0e0e0; }
     th { background: #f1f8e9; color: #2e7d32; font-weight: bold; }
 
+    /* Verification Modal */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
-    .modal-card { background: #fffdf5; border-radius: 18px; padding: 15px; width: 100%; max-width: 420px; text-align: center; border: 4px solid #2e7d32; max-height: 90vh; overflow-y: auto; }
-    .modal-card h3 { font-family: 'Fredoka One', cursive; color: #e65100; font-size: 22px; margin: 0 0 4px 0; }
-    .modal-subtitle { font-size: 12px; color: #2e7d32; font-weight: 700; margin-bottom: 12px; }
+    .modal-card { background: #fffdf5; border-radius: 18px; padding: 16px; width: 100%; max-width: 420px; text-align: center; border: 4px solid #2e7d32; max-height: 92vh; overflow-y: auto; }
+    .modal-card h3 { font-family: 'Fredoka One', cursive; color: #e65100; font-size: 22px; margin: 0 0 12px 0; }
 
+    /* Screen-Wide Full Photo Container */
     .modal-image-wrapper { width: 100%; margin-bottom: 12px; border-radius: 10px; overflow: hidden; border: 2px solid #2e7d32; background: #e8f5e9; }
-    .modal-image { width: 100%; height: auto; max-height: 340px; object-fit: contain; display: block; }
+    .modal-image { width: 100%; height: auto; max-height: 320px; object-fit: contain; display: block; }
 
+    /* Prominent Table Assignment Banner inside Modal */
     .modal-table-banner {
       background: linear-gradient(180deg, #fff3e0 0%, #ffe0b2 100%);
       border: 2px solid #e65100;
@@ -110,6 +112,8 @@
     .btn-confirm { background: #2e7d32; color: #fff; box-shadow: 0 4px 0 #1b5e20; }
     .btn-confirm:disabled { background: #9e9e9e; box-shadow: none; cursor: not-allowed; }
     .btn-cancel { background: #757575; color: #fff; box-shadow: 0 4px 0 #424242; }
+
+    .footer-text { font-size: 11px; font-weight: bold; color: #558b2f; margin-top: 14px; letter-spacing: 0.5px; }
   </style>
 </head>
 <body>
@@ -147,7 +151,7 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Email Address</th>
+            <th>Name / Email</th>
             <th>Table</th>
             <th>Time</th>
             <th>Device</th>
@@ -158,13 +162,14 @@
         </tbody>
       </table>
     </div>
+
+    <div class="footer-text">Developed by Drei Delosa (@dreivance)</div>
   </div>
 </div>
 
 <div id="confirm-modal" class="modal-overlay">
   <div class="modal-card">
     <h3>Verify Attendee</h3>
-    <p class="modal-subtitle">Confirm details match person holding the QR</p>
     
     <div class="modal-image-wrapper">
       <img id="modal-image" class="modal-image" src="" alt="Selfie Verification">
@@ -176,6 +181,10 @@
     </div>
 
     <div class="details-box">
+      <div style="margin-bottom: 6px;">
+        <span class="details-label">Full Name</span>
+        <div id="modal-name" class="details-value">-</div>
+      </div>
       <div style="margin-bottom: 6px;">
         <span class="details-label">Email Address (Unique ID)</span>
         <div id="modal-email" class="details-value">-</div>
@@ -190,6 +199,8 @@
       <button class="btn-cancel" onclick="cancelCheckIn()">❌ Reject</button>
       <button class="btn-confirm" id="confirm-btn" onclick="confirmCheckIn()">✅ Confirm</button>
     </div>
+
+    <div class="footer-text">Developed by Drei Delosa (@dreivance)</div>
   </div>
 </div>
 
@@ -215,14 +226,14 @@
 
   function checkDeviceName() {
     if (!scannerDeviceName) {
-      scannerDeviceName = prompt("Enter a name for this scanner (e.g., Gate 1, Admin Phone):", "Scanner 1") || "Scanner 1";
+      scannerDeviceName = prompt("Enter a name for this scanner:", "Drei's phone") || "Drei's phone";
       localStorage.setItem('scanner_device_name', scannerDeviceName);
     }
     document.getElementById('device-name-display').innerText = scannerDeviceName;
   }
 
   function changeDeviceName() {
-    const newName = prompt("Update device name:", scannerDeviceName);
+    const newName = prompt("Update device name:", scannerDeviceName || "Drei's phone");
     if (newName && newName.trim()) {
       scannerDeviceName = newName.trim();
       localStorage.setItem('scanner_device_name', scannerDeviceName);
@@ -305,19 +316,27 @@
     }, 200);
   }
 
+  // Strictly validate that scanned code is a valid Unified Fiesta JSON payload
   function parseQRData(qrText) {
     try {
       const parsed = JSON.parse(qrText);
-      if (parsed.e || parsed.n || parsed.email) {
+      if (parsed && typeof parsed === 'object' && (parsed.e || parsed.email)) {
+        const resolvedEmail = String(parsed.e || parsed.email).trim().toLowerCase();
+        if (!resolvedEmail.includes('@')) return null;
+
         let imageUrl = parsed.i || null;
         if (imageUrl && imageUrl.includes('drive.google.com/uc?export=view&id=')) {
           const id = imageUrl.split('id=')[1];
           imageUrl = 'https://lh3.googleusercontent.com/d/' + id;
         }
-        // Always normalize email to lowercase for case-insensitive matching
-        const resolvedEmail = String(parsed.e || parsed.email || parsed.n || "n/a").trim().toLowerCase();
+
+        const resolvedName = (parsed.n && parsed.n.toLowerCase() !== resolvedEmail) 
+          ? String(parsed.n).trim() 
+          : "Guest";
+
         return { 
-          name: resolvedEmail,
+          valid: true,
+          name: resolvedName,
           contact: parsed.c || parsed.contact || "N/A",
           email: resolvedEmail,
           image: imageUrl,
@@ -325,8 +344,7 @@
         };
       }
     } catch (e) {}
-    const fallbackEmail = String(qrText).trim().toLowerCase();
-    return { name: fallbackEmail, contact: "N/A", email: fallbackEmail, image: null, table: "Unassigned" };
+    return null; // Reject stray 1D product barcodes or unrelated QR codes
   }
 
   function onScanSuccess(decodedText) {
@@ -340,18 +358,26 @@
 
     const parsed = parseQRData(decodedText);
     
+    // Ignore invalid / non-event barcodes (fixes stray barcode bug)
+    if (!parsed || !parsed.valid) {
+      playErrorBeep();
+      showStatus("⚠️ Invalid QR/Barcode — Not a Unified Fiesta pass!", "warning");
+      return;
+    }
+    
     // Case-insensitive duplicate check strictly based on normalized Email Address
     const incomingEmail = parsed.email.trim().toLowerCase();
-    const isDuplicate = incomingEmail !== "n/a" && logs.some(entry => 
-      String(entry.Email || entry.Name || "").trim().toLowerCase() === incomingEmail
+    const isDuplicate = logs.some(entry => 
+      String(entry.Email || "").trim().toLowerCase() === incomingEmail
     );
     
     if (isDuplicate) {
       playErrorBeep();
-      showStatus(`⚠️ ${parsed.email} is ALREADY checked in!`, 'warning');
+      const displayLabel = parsed.name !== "Guest" ? `${parsed.name} (${parsed.email})` : parsed.email;
+      showStatus(`⚠️ ${displayLabel} is ALREADY checked in!`, 'warning');
       
       setTimeout(() => {
-        const allowRescan = confirm(`⚠️ ${parsed.email} has ALREADY been scanned!\n\nDo you still want to re-scan / re-verify this participant?`);
+        const allowRescan = confirm(`⚠️ ${displayLabel} has ALREADY been scanned!\n\nDo you still want to re-scan / re-verify this participant?`);
         if (allowRescan) {
           openVerificationModal(parsed);
         }
@@ -366,6 +392,7 @@
     pendingRecord = parsed;
     isConfirming = true;
 
+    document.getElementById('modal-name').innerText = parsed.name;
     document.getElementById('modal-email').innerText = parsed.email;
     document.getElementById('modal-contact').innerText = parsed.contact;
     document.getElementById('modal-table').innerText = parsed.table;
@@ -396,6 +423,7 @@
 
     const record = {
       "#": logs.length + 1,
+      "Name": pendingRecord.name,
       "Email": normalizedEmail,
       "Table": pendingRecord.table,
       "Contact": pendingRecord.contact,
@@ -414,7 +442,7 @@
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           action: "log_attendance",
-          name: normalizedEmail,
+          name: pendingRecord.name,
           email: normalizedEmail,
           contact: pendingRecord.contact,
           image: pendingRecord.image || "",
@@ -422,7 +450,7 @@
           table: pendingRecord.table
         })
       });
-      showStatus(`✅ Checked in: ${normalizedEmail} (${pendingRecord.table})`, 'success');
+      showStatus(`✅ Checked in: ${pendingRecord.name !== "Guest" ? pendingRecord.name : normalizedEmail} (${pendingRecord.table})`, 'success');
     } catch(e) {
       console.error(e);
       showStatus(`⚠️ Saved locally (Sheet sync failed)`, 'warning');
@@ -461,15 +489,21 @@
       return;
     }
 
-    tbody.innerHTML = logs.map((log, index) => `
-      <tr>
-        <td>${logs.length - index}</td>
-        <td><strong>${escapeHtml((log.Email || log.Name || "n/a").toLowerCase())}</strong></td>
-        <td><span style="background:#ffe0b2; color:#bf360c; padding:2px 5px; border-radius:4px; font-weight:bold;">${escapeHtml(log.Table || "Unassigned")}</span></td>
-        <td>${log.Time}</td>
-        <td><span style="background:#e8f5e9; color:#1b5e20; padding:2px 4px; border-radius:4px; font-weight:bold;">${escapeHtml(log.Device || "N/A")}</span></td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = logs.map((log, index) => {
+      const primaryDisplay = (log.Name && log.Name !== "Guest" && log.Name !== log.Email)
+        ? `<strong>${escapeHtml(log.Name)}</strong><br><span style="color:#555; font-size:10px;">${escapeHtml(log.Email || "")}</span>`
+        : `<strong>${escapeHtml((log.Email || log.Name || "n/a").toLowerCase())}</strong>`;
+
+      return `
+        <tr>
+          <td>${logs.length - index}</td>
+          <td>${primaryDisplay}</td>
+          <td><span style="background:#ffe0b2; color:#bf360c; padding:2px 5px; border-radius:4px; font-weight:bold;">${escapeHtml(log.Table || "Unassigned")}</span></td>
+          <td>${log.Time}</td>
+          <td><span style="background:#e8f5e9; color:#1b5e20; padding:2px 4px; border-radius:4px; font-weight:bold;">${escapeHtml(log.Device || "N/A")}</span></td>
+        </tr>
+      `;
+    }).join('');
   }
 
   function escapeHtml(text) {
@@ -493,7 +527,17 @@
   }
 
   function initScanner() {
-    const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 220, height: 220 }, facingMode: "environment" }, false);
+    // Restrict scanner strictly to QR_CODE format so 1D barcodes (like 09376625) are never read
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+      "reader",
+      {
+        fps: 10,
+        qrbox: { width: 220, height: 220 },
+        facingMode: "environment",
+        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
+      },
+      false
+    );
     html5QrcodeScanner.render(onScanSuccess);
   }
 </script>
