@@ -55,16 +55,39 @@
     p.sub { color: #2e7d32; font-weight: 700; margin-top: 0; font-size: 13px; margin-bottom: 20px; }
     
     .input-group { margin-bottom: 14px; text-align: left; }
-    .name-row { display: flex; gap: 10px; }
-    .name-row .input-group { flex: 1; margin-bottom: 14px; }
     
     label { display: block; font-weight: 700; margin-bottom: 4px; font-size: 12px; color: #2e7d32; text-transform: uppercase; }
     input { width: 100%; padding: 10px 12px; border: 2px solid #a5d6a7; border-radius: 10px; font-size: 14px; background: #fff; font-family: inherit; }
     input:focus { outline: none; border-color: #e65100; box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.15); }
+
+    /* Domain Autocomplete Pill */
+    .domain-suggestion {
+      display: none;
+      margin-top: 6px;
+      background: #e8f5e9;
+      border: 1.5px solid #2e7d32;
+      color: #1b5e20;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      width: fit-content;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .domain-suggestion:hover {
+      background: #c8e6c9;
+    }
+    .domain-suggestion:active {
+      transform: scale(0.97);
+    }
+    .domain-suggestion span {
+      color: #e65100;
+    }
     
     .photo-preview { width: 100px; height: 100px; border-radius: 10px; object-fit: cover; border: 2px solid #a5d6a7; margin-top: 8px; display: none; margin-left: auto; margin-right: auto; }
 
-    button {
+    button.action-btn {
       width: 100%;
       padding: 12px;
       border: none;
@@ -82,7 +105,6 @@
     
     .btn-download { background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%); color: white; box-shadow: 0 5px 0 #1b5e20; display: none; margin-top: 10px; }
 
-    /* QR Result Box + Table Badge */
     #qr-container {
       margin: 18px auto;
       padding: 16px;
@@ -104,9 +126,9 @@
       background: #e8f5e9;
       border: 2px solid #2e7d32;
       border-radius: 12px;
-      padding: 8px 18px;
+      padding: 10px 16px;
       width: 100%;
-      max-width: 240px;
+      max-width: 280px;
     }
     .table-label {
       font-size: 11px;
@@ -119,6 +141,13 @@
       font-family: 'Fredoka One', cursive;
       font-size: 22px;
       color: #e65100;
+      margin-top: 2px;
+    }
+    .table-not-found-note {
+      font-size: 13px;
+      font-weight: 700;
+      color: #bf360c;
+      line-height: 1.4;
       margin-top: 2px;
     }
     
@@ -148,25 +177,18 @@
 
       <div class="status-msg" id="status-msg"></div>
 
-      <div class="name-row">
-        <div class="input-group">
-          <label for="firstName">First Name</label>
-          <input type="text" id="firstName" placeholder="e.g. Juan" required>
-        </div>
-        <div class="input-group">
-          <label for="lastName">Last Name</label>
-          <input type="text" id="lastName" placeholder="e.g. Dela Cruz" required>
+      <div class="input-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" list="domain-options" placeholder="e.g. juan@unified-accounting.com" required autocomplete="off">
+        <datalist id="domain-options"></datalist>
+        <div id="domain-suggestion-pill" class="domain-suggestion" onclick="applyDomainSuggestion()">
+          Tap to complete: <span id="suggested-email-text"></span>
         </div>
       </div>
 
       <div class="input-group">
         <label for="contact">Contact Number</label>
         <input type="tel" id="contact" placeholder="e.g. 09171234567" required autocomplete="tel">
-      </div>
-      
-      <div class="input-group">
-        <label for="email">Email Address</label>
-        <input type="email" id="email" placeholder="e.g. juan@ug.edu" required autocomplete="email">
       </div>
 
       <div class="input-group">
@@ -175,21 +197,19 @@
         <img id="photo-preview" class="photo-preview" alt="Selfie Preview">
       </div>
 
-      <button class="btn-generate" id="generate-btn" onclick="processAndGenerate()">Generate My QR Code</button>
+      <button class="action-btn btn-generate" id="generate-btn" onclick="processAndGenerate()">Generate My QR Code</button>
 
-      <!-- Hidden staging container for raw QRCode.js generation -->
       <div id="qrcode-hidden" style="display:none;"></div>
 
-      <!-- Visible Final QR Card with Center UG Icon & Table Number -->
       <div id="qr-container">
         <img id="final-qr-img" src="" alt="Your Event QR Code">
-        <div class="table-assignment-box">
-          <div class="table-label">Assigned Table</div>
+        <div class="table-assignment-box" id="table-box">
+          <div class="table-label" id="table-box-label">Assigned Table</div>
           <div class="table-number-value" id="assigned-table-display">-</div>
         </div>
       </div>
 
-      <button class="btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save / Download QR Code</button>
+      <button class="action-btn btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save / Download QR Code</button>
       
       <div class="footer-text">UNIFIED GLOBAL · UNIFIED FIESTA</div>
     </div>
@@ -198,18 +218,53 @@
   <script>
     let base64Image = "";
     let finalDownloadDataUrl = "";
+    const DEFAULT_DOMAIN = "unified-accounting.com";
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
 
-    // Crisp vector SVG matching your UG monogram logo (Dark Green #296b47 background, White UG emblem)
     const UG_LOGO_SVG = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
         <rect width="120" height="120" rx="18" fill="#296b47"/>
-        <!-- Outer U shape -->
         <path d="M 16 24 L 34 24 C 37 24 39 26 39 29 L 39 36 L 32 36 L 32 68 C 32 84 44 95 60 95 C 76 95 88 84 88 68 L 88 36 L 81 36 L 81 29 C 81 26 83 24 86 24 L 104 24 L 104 68 C 104 92 85 110 60 110 C 35 110 16 92 16 68 Z" fill="#ffffff"/>
-        <!-- Inner G shape -->
         <path d="M 74 44 C 70 39 65 37 59 37 C 46 37 37 47 37 60 C 37 73 46 83 59 83 C 71 83 80 75 81 63 L 81 56 L 58 56 L 58 68 L 67 68 C 65 71 62 72 59 72 C 52 72 48 67 48 60 C 48 53 52 48 59 48 C 63 48 66 49 68 52 Z" fill="#ffffff"/>
       </svg>
     `;
+
+    // Domain Autocomplete Handler
+    const emailInput = document.getElementById('email');
+    const suggestionPill = document.getElementById('domain-suggestion-pill');
+    const suggestedText = document.getElementById('suggested-email-text');
+    const dataList = document.getElementById('domain-options');
+
+    emailInput.addEventListener('input', function() {
+      const val = this.value.trim();
+      const atIndex = val.indexOf('@');
+
+      if (atIndex > 0) {
+        const prefix = val.substring(0, atIndex);
+        const typedDomain = val.substring(atIndex + 1).toLowerCase();
+        const fullSuggestion = `${prefix}@${DEFAULT_DOMAIN}`;
+
+        // Show suggestion pill if domain starts matching default domain and isn't already completed
+        if (DEFAULT_DOMAIN.startsWith(typedDomain) && typedDomain !== DEFAULT_DOMAIN) {
+          suggestedText.innerText = fullSuggestion;
+          suggestionPill.style.display = 'inline-block';
+          dataList.innerHTML = `<option value="${fullSuggestion}">`;
+        } else {
+          suggestionPill.style.display = 'none';
+          dataList.innerHTML = '';
+        }
+      } else {
+        suggestionPill.style.display = 'none';
+        dataList.innerHTML = '';
+      }
+    });
+
+    function applyDomainSuggestion() {
+      emailInput.value = suggestedText.innerText;
+      suggestionPill.style.display = 'none';
+      dataList.innerHTML = '';
+      document.getElementById('contact').focus();
+    }
 
     function handleBannerError() {
       document.getElementById('banner-img').style.display = 'none';
@@ -256,20 +311,16 @@
     }
 
     async function processAndGenerate() {
-      const firstName = document.getElementById('firstName').value.trim();
-      const lastName = document.getElementById('lastName').value.trim();
+      const email = document.getElementById('email').value.trim().toLowerCase();
       const contact = document.getElementById('contact').value.trim();
-      const email = document.getElementById('email').value.trim();
       const btn = document.getElementById('generate-btn');
       
       document.getElementById('status-msg').style.display = 'none';
 
-      if (!firstName || !lastName || !contact || !email || !base64Image) {
-        showStatus("Please fill out all fields and take a selfie.", "error");
+      if (!email || !contact || !base64Image) {
+        showStatus("Please enter your Email Address, Contact Number, and take a Selfie.", "error");
         return;
       }
-
-      const fullName = `${firstName} ${lastName}`;
 
       btn.disabled = true;
       btn.innerText = "Generating QR & Checking Table...";
@@ -279,15 +330,16 @@
         const response = await fetch(GOOGLE_SCRIPT_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-          body: JSON.stringify({ name: fullName, email: email, image: base64Image })
+          body: JSON.stringify({ email: email, image: base64Image })
         });
 
         const result = await response.json();
 
         if (result.success) {
+          const tableFound = result.tableFound === true;
           const tableNumber = result.table || "Unassigned";
-          await generateCustomQRCode(fullName, contact, email, result.url, tableNumber);
-          showStatus("Success! Your QR code and table number are ready.", "success");
+          await generateCustomQRCode(contact, email, result.url, tableNumber, tableFound);
+          showStatus("Success! Your QR code is ready.", "success");
         } else {
           throw new Error(result.error || "Failed to upload image.");
         }
@@ -300,19 +352,19 @@
       }
     }
 
-    function generateCustomQRCode(name, contact, email, driveUrl, tableNumber) {
+    function generateCustomQRCode(contact, email, driveUrl, tableNumber, tableFound) {
       return new Promise((resolve) => {
-        const payload = { n: name, c: contact, e: email, i: driveUrl, t: tableNumber };
+        const normalizedEmail = email.trim().toLowerCase();
+        const payload = { n: normalizedEmail, c: contact, e: normalizedEmail, i: driveUrl, t: tableNumber };
         const qrString = JSON.stringify(payload);
         const hiddenContainer = document.getElementById('qrcode-hidden');
         hiddenContainer.innerHTML = "";
 
-        // Generate dark green QR with High Error Correction (Level H) so center logo never breaks scanning
         new QRCode(hiddenContainer, {
           text: qrString,
           width: 240,
           height: 240,
-          colorDark : "#1b5e20", // Dark Green QR color
+          colorDark : "#1b5e20",
           colorLight : "#ffffff",
           correctLevel : QRCode.CorrectLevel.H
         });
@@ -324,7 +376,6 @@
           const svgUrl = URL.createObjectURL(svgBlob);
 
           logoImg.onload = function() {
-            // 1. Create on-screen QR with Center UG Logo
             const qrCanvas = document.createElement('canvas');
             qrCanvas.width = 240;
             qrCanvas.height = 240;
@@ -332,7 +383,6 @@
 
             qCtx.drawImage(rawCanvas, 0, 0, 240, 240);
 
-            // Draw white rounded frame behind center logo for crisp contrast
             const logoSize = 54;
             const pad = 4;
             const x = (240 - logoSize) / 2;
@@ -347,50 +397,73 @@
 
             const qrDataUrl = qrCanvas.toDataURL("image/png");
             document.getElementById('final-qr-img').src = qrDataUrl;
-            document.getElementById('assigned-table-display').innerText = tableNumber;
 
-            // 2. Build downloadable pass image containing QR + Name + Table Number
+            const tableBox = document.getElementById('table-box');
+            const tableLabel = document.getElementById('table-box-label');
+            const tableDisplay = document.getElementById('assigned-table-display');
+
+            if (tableFound) {
+              tableBox.style.background = "#e8f5e9";
+              tableBox.style.borderColor = "#2e7d32";
+              tableLabel.style.display = "block";
+              tableDisplay.className = "table-number-value";
+              tableDisplay.innerText = tableNumber;
+            } else {
+              tableBox.style.background = "#fff3e0";
+              tableBox.style.borderColor = "#e65100";
+              tableLabel.style.display = "none";
+              tableDisplay.className = "table-not-found-note";
+              tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
+            }
+
             const passCanvas = document.createElement('canvas');
             passCanvas.width = 320;
-            passCanvas.height = 390;
+            passCanvas.height = 395;
             const pCtx = passCanvas.getContext('2d');
 
             pCtx.fillStyle = "#fffdf5";
-            pCtx.fillRect(0, 0, 320, 390);
+            pCtx.fillRect(0, 0, 320, 395);
 
-            // Green border
             pCtx.strokeStyle = "#2e7d32";
             pCtx.lineWidth = 8;
-            pCtx.strokeRect(4, 4, 312, 382);
+            pCtx.strokeRect(4, 4, 312, 387);
 
-            // Header text
             pCtx.fillStyle = "#e65100";
             pCtx.font = "bold 20px sans-serif";
             pCtx.textAlign = "center";
             pCtx.fillText("UNIFIED FIESTA PASS", 160, 36);
 
-            // Draw QR code with center logo
             pCtx.drawImage(qrCanvas, 40, 50, 240, 240);
 
-            // Attendee Name
             pCtx.fillStyle = "#1b4332";
-            pCtx.font = "bold 16px sans-serif";
-            pCtx.fillText(name, 160, 316);
+            pCtx.font = "bold 14px sans-serif";
+            pCtx.fillText(normalizedEmail, 160, 315);
 
-            // Assigned Table Badge
-            pCtx.fillStyle = "#e8f5e9";
-            pCtx.fillRect(45, 330, 230, 42);
-            pCtx.strokeStyle = "#2e7d32";
-            pCtx.lineWidth = 2;
-            pCtx.strokeRect(45, 330, 230, 42);
+            if (tableFound) {
+              pCtx.fillStyle = "#e8f5e9";
+              pCtx.fillRect(45, 330, 230, 44);
+              pCtx.strokeStyle = "#2e7d32";
+              pCtx.lineWidth = 2;
+              pCtx.strokeRect(45, 330, 230, 44);
 
-            pCtx.fillStyle = "#2e7d32";
-            pCtx.font = "bold 16px sans-serif";
-            pCtx.fillText("TABLE: " + tableNumber, 160, 357);
+              pCtx.fillStyle = "#2e7d32";
+              pCtx.font = "bold 16px sans-serif";
+              pCtx.fillText("TABLE: " + tableNumber, 160, 358);
+            } else {
+              pCtx.fillStyle = "#fff3e0";
+              pCtx.fillRect(25, 330, 270, 46);
+              pCtx.strokeStyle = "#e65100";
+              pCtx.lineWidth = 2;
+              pCtx.strokeRect(25, 330, 270, 46);
+
+              pCtx.fillStyle = "#bf360c";
+              pCtx.font = "bold 11px sans-serif";
+              pCtx.fillText("Table assignment not found.", 160, 349);
+              pCtx.fillText("Ask registration for your table #", 160, 365);
+            }
 
             finalDownloadDataUrl = passCanvas.toDataURL("image/png");
 
-            // Reveal container & scroll to focus
             const qrContainer = document.getElementById('qr-container');
             qrContainer.style.display = 'flex';
             document.getElementById('download-btn').style.display = 'block';
@@ -405,11 +478,10 @@
     }
 
     function downloadQR() {
-      const firstName = document.getElementById('firstName').value.trim();
-      const lastName = document.getElementById('lastName').value.trim();
+      const emailPrefix = document.getElementById('email').value.trim().toLowerCase().split('@')[0] || "guest";
       if (finalDownloadDataUrl) {
         const link = document.createElement('a');
-        link.download = `Fiesta_QR_${firstName}_${lastName}.png`;
+        link.download = `Fiesta_QR_${emailPrefix}.png`;
         link.href = finalDownloadDataUrl;
         link.click();
       }
