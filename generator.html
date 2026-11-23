@@ -98,7 +98,75 @@
     .btn-generate:disabled { background: #b0bec5; box-shadow: none; cursor: not-allowed; }
     
     .btn-download { background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%); color: white; box-shadow: 0 5px 0 #1b5e20; margin-top: 10px; }
-    .btn-back { background: linear-gradient(180deg, #78909c 0%, #546e7a 100%); color: white; box-shadow: 0 5px 0 #37474f; margin-top: 10px; font-size: 14px; }
+    .btn-back {
+      background: linear-gradient(180deg, #78909c 0%, #546e7a 100%);
+      color: white;
+      box-shadow: 0 5px 0 #37474f;
+      margin-top: 10px;
+      font-size: 14px;
+      padding: 11px 12px;
+      white-space: nowrap;
+    }
+
+    /* Animated Moving Floating Alert */
+    .floating-alert-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(27, 67, 50, 0.45);
+      backdrop-filter: blur(2px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1200;
+      padding: 20px;
+    }
+    .floating-alert-box {
+      background: linear-gradient(135deg, #ffffff 0%, #f1f8e9 100%);
+      border: 3px solid #2e7d32;
+      border-radius: 20px;
+      padding: 18px 22px;
+      max-width: 340px;
+      width: 100%;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      animation: floatBounce 1.8s ease-in-out infinite;
+    }
+    .floating-spinner {
+      width: 38px;
+      height: 38px;
+      border: 4px solid #c8e6c9;
+      border-top: 4px solid #e65100;
+      border-right: 4px solid #2e7d32;
+      border-radius: 50%;
+      animation: spinRing 0.85s linear infinite;
+    }
+    .floating-alert-text {
+      font-weight: 700;
+      font-size: 14.5px;
+      color: #1b5e20;
+      text-align: center;
+      line-height: 1.4;
+      animation: pulseText 1.6s ease-in-out infinite;
+    }
+
+    @keyframes floatBounce {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-9px); }
+    }
+    @keyframes spinRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes pulseText {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.72; }
+    }
 
     /* Dedicated QR Result Screen */
     #result-screen { display: none; }
@@ -247,6 +315,14 @@
 
   <div class="flag-banner"></div>
 
+  <!-- ANIMATED MOVING FLOATING ALERT -->
+  <div id="floating-loader" class="floating-alert-backdrop">
+    <div class="floating-alert-box">
+      <div class="floating-spinner"></div>
+      <div class="floating-alert-text">Uploading selfie and looking up table assignment...</div>
+    </div>
+  </div>
+
   <div class="container">
     <!-- SCREEN 1: REGISTRATION FORM -->
     <div class="card" id="form-screen">
@@ -299,7 +375,7 @@
       </div>
 
       <h2>Your Fiesta Pass</h2>
-      <p class="sub">Present this QR code at the entrance gate</p>
+      <p class="sub">Present this QR code at the entrance</p>
 
       <div id="qr-container">
         <img id="final-qr-img" src="" alt="Your Event QR Code">
@@ -315,7 +391,7 @@
       </div>
 
       <button class="action-btn btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save QR Image to Phone</button>
-      <button class="action-btn btn-back" onclick="backToForm()">← Back to Form / Generate Again</button>
+      <button class="action-btn btn-back" onclick="backToForm()">Generate Again</button>
 
       <div class="footer-text">
         Developed by Drei Delosa (<a class="footer-link" href="https://www.linkedin.com/in/dreivance/" target="_blank" rel="noopener noreferrer">@dreivance</a>)
@@ -341,16 +417,48 @@
   </div>
 
   <script>
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+    window.addEventListener('load', () => {
+      window.scrollTo(0, 0);
+    });
+
     let base64Image = "";
     let finalDownloadDataUrl = "";
     const DEFAULT_DOMAIN = "unified-accounting.com";
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
 
+    // Crisp vector SVG matching the Unified Global logo (green gradient UG emblem + UNIFIED GLOBAL wordmark)
     const UG_LOGO_SVG = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
-        <rect width="120" height="120" rx="18" fill="#296b47"/>
-        <path d="M 16 24 L 34 24 C 37 24 39 26 39 29 L 39 36 L 32 36 L 32 68 C 32 84 44 95 60 95 C 76 95 88 84 88 68 L 88 36 L 81 36 L 81 29 C 81 26 83 24 86 24 L 104 24 L 104 68 C 104 92 85 110 60 110 C 35 110 16 92 16 68 Z" fill="#ffffff"/>
-        <path d="M 74 44 C 70 39 65 37 59 37 C 46 37 37 47 37 60 C 37 73 46 83 59 83 C 71 83 80 75 81 63 L 81 56 L 58 56 L 58 68 L 67 68 C 65 71 62 72 59 72 C 52 72 48 67 48 60 C 48 53 52 48 59 48 C 63 48 66 49 68 52 Z" fill="#ffffff"/>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 245" width="240" height="245">
+        <defs>
+          <linearGradient id="ugGradOuter" x1="15%" y1="10%" x2="85%" y2="90%">
+            <stop offset="0%" stop-color="#c6df33"/>
+            <stop offset="45%" stop-color="#5ca428"/>
+            <stop offset="100%" stop-color="#176e20"/>
+          </linearGradient>
+          <linearGradient id="ugGradInner" x1="80%" y1="15%" x2="20%" y2="85%">
+            <stop offset="0%" stop-color="#c6df33"/>
+            <stop offset="55%" stop-color="#5ca428"/>
+            <stop offset="100%" stop-color="#1b7422"/>
+          </linearGradient>
+          <linearGradient id="ugShadow" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#0f5a18" stop-opacity="0.65"/>
+            <stop offset="100%" stop-color="#176e20" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <rect width="240" height="245" rx="22" fill="#ffffff"/>
+        <!-- Outer U Emblem -->
+        <path d="M 38 30 L 62 30 C 71 30 77 37 77 46 L 77 54 L 61 54 L 61 106 C 61 139 87 163 120 163 C 153 163 179 139 179 106 L 179 54 L 163 54 L 163 46 C 163 37 169 30 178 30 L 202 30 L 202 106 C 202 152 166 186 120 186 C 74 186 38 152 38 106 Z" fill="url(#ugGradOuter)"/>
+        <!-- Subtle lower-right curve accent on U -->
+        <path d="M 120 163 C 153 163 179 139 179 106 L 179 84 C 175 128 148 156 108 162 C 112 163 116 163 120 163 Z" fill="url(#ugShadow)"/>
+        <!-- Inner G Emblem -->
+        <path d="M 149 62 C 141 53 130 48 117 48 C 91 48 72 68 72 95 C 72 122 91 142 118 142 C 143 142 162 124 163 98 L 163 87 L 116 87 L 116 107 L 139 107 C 136 116 128 122 118 122 C 103 122 93 111 93 95 C 93 79 103 68 118 68 C 125 68 131 71 135 75 C 139 79 144 79 148 75 L 152 71 C 154 68 153 65 149 62 Z" fill="url(#ugGradInner)"/>
+        <!-- UNIFIED GLOBAL Wordmark -->
+        <text x="120" y="211" text-anchor="middle" font-family="'Quicksand', 'Segoe UI', Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="4" fill="#176e20">UNIFIED</text>
+        <text x="120" y="233" text-anchor="middle" font-family="'Quicksand', 'Segoe UI', Arial, sans-serif" font-size="21" font-weight="800" letter-spacing="3.5" fill="#176e20">GLOBAL</text>
       </svg>
     `;
 
@@ -433,7 +541,10 @@
       statusEl.style.display = 'block';
     }
 
-    // Step 1: Validate fields & show email double-check modal
+    function showFloatingLoader(show) {
+      document.getElementById('floating-loader').style.display = show ? 'flex' : 'none';
+    }
+
     function promptEmailConfirmation() {
       const email = document.getElementById('email').value.trim().toLowerCase();
       const contact = document.getElementById('contact').value.trim();
@@ -466,15 +577,14 @@
       processAndGenerate();
     }
 
-    // Step 2: Upload selfie, check table assignment, and build QR pass
     async function processAndGenerate() {
       const email = document.getElementById('email').value.trim().toLowerCase();
       const contact = document.getElementById('contact').value.trim();
       const btn = document.getElementById('generate-btn');
 
       btn.disabled = true;
-      btn.innerText = "Generating QR & Checking Table...";
-      showStatus("Uploading selfie & looking up table assignment...", "loading");
+      btn.innerText = "Processing...";
+      showFloatingLoader(true);
 
       try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -501,6 +611,7 @@
         console.error(err);
         showStatus("Error connecting to server. Please try again.", "error");
       } finally {
+        showFloatingLoader(false);
         btn.disabled = false;
         btn.innerText = "Generate My QR Code";
       }
@@ -551,17 +662,22 @@
 
             qCtx.drawImage(rawCanvas, 0, 0, 240, 240);
 
-            const logoSize = 54;
+            // Preserve original aspect ratio without stretching
+            const maxBoxSize = 62;
+            const scale = Math.min(maxBoxSize / logoImg.width, maxBoxSize / logoImg.height);
+            const drawW = logoImg.width * scale;
+            const drawH = logoImg.height * scale;
             const pad = 4;
-            const x = (240 - logoSize) / 2;
-            const y = (240 - logoSize) / 2;
+            const x = (240 - drawW) / 2;
+            const y = (240 - drawH) / 2;
 
+            // Clean white rounded badge behind logo so QR data modules remain unobstructed
             qCtx.fillStyle = "#ffffff";
             qCtx.beginPath();
-            qCtx.roundRect(x - pad, y - pad, logoSize + pad * 2, logoSize + pad * 2, 10);
+            qCtx.roundRect(x - pad, y - pad, drawW + pad * 2, drawH + pad * 2, 10);
             qCtx.fill();
 
-            qCtx.drawImage(logoImg, x, y, logoSize, logoSize);
+            qCtx.drawImage(logoImg, x, y, drawW, drawH);
 
             const qrDataUrl = qrCanvas.toDataURL("image/png");
             document.getElementById('final-qr-img').src = qrDataUrl;
