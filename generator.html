@@ -60,14 +60,6 @@
     input { width: 100%; padding: 10px 12px; border: 2px solid #a5d6a7; border-radius: 10px; font-size: 14px; background: #fff; font-family: inherit; }
     input:focus { outline: none; border-color: #e65100; box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.15); }
 
-    .email-hint {
-      font-size: 11.5px;
-      font-weight: 700;
-      color: #bf360c;
-      margin-top: 5px;
-      line-height: 1.35;
-    }
-
     /* Domain Autocomplete Pill */
     .domain-suggestion {
       display: none;
@@ -180,10 +172,75 @@
     .status-loading { color: #1b5e20; background: #e8f5e9; }
     .status-success { color: #1b5e20; background: #c8e6c9; }
     
-    /* Option 1 Stacked Footer */
-    .footer-text { font-size: 11px; font-weight: bold; color: #558b2f; margin-top: 16px; letter-spacing: 0.5px; }
-    .footer-link-row { margin-top: 4px; }
-    .footer-link { color: #e65100; text-decoration: underline; }
+    /* Footnote with Blue @dreivance LinkedIn Link */
+    .footer-text { font-size: 11px; font-weight: bold; color: #558b2f; margin-top: 16px; letter-spacing: 0.4px; }
+    .footer-link { color: #1565c0; text-decoration: underline; }
+
+    /* Email Confirmation Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.72);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 15px;
+    }
+    .modal-card {
+      background: #fffdf5;
+      border-radius: 18px;
+      padding: 20px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      border: 4px solid #2e7d32;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    }
+    .modal-card h3 {
+      font-family: 'Fredoka One', cursive;
+      color: #e65100;
+      font-size: 21px;
+      margin: 0 0 8px 0;
+    }
+    .modal-body-text {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1b4332;
+      line-height: 1.45;
+      margin-bottom: 12px;
+    }
+    .email-highlight-box {
+      background: #e8f5e9;
+      border: 2px dashed #2e7d32;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1565c0;
+      word-break: break-all;
+      margin-bottom: 16px;
+    }
+    .modal-btn-row {
+      display: flex;
+      gap: 10px;
+    }
+    .modal-btn {
+      flex: 1;
+      padding: 11px 10px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Fredoka One', cursive;
+      font-size: 13.5px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .btn-edit-email { background: #757575; color: #fff; box-shadow: 0 4px 0 #424242; }
+    .btn-proceed-email { background: #2e7d32; color: #fff; box-shadow: 0 4px 0 #1b5e20; }
   </style>
 </head>
 <body>
@@ -212,7 +269,6 @@
         <div id="domain-suggestion-pill" class="domain-suggestion" onclick="applyDomainSuggestion()">
           Tap to complete: <span id="suggested-email-text"></span>
         </div>
-        <div class="email-hint">⚠️ Please double-check your email address to be sure — it serves as your unique ID.</div>
       </div>
 
       <div class="input-group">
@@ -226,13 +282,10 @@
         <img id="photo-preview" class="photo-preview" alt="Selfie Preview">
       </div>
 
-      <button class="action-btn btn-generate" id="generate-btn" onclick="processAndGenerate()">Generate My QR Code</button>
+      <button class="action-btn btn-generate" id="generate-btn" onclick="promptEmailConfirmation()">Generate My QR Code</button>
       
       <div class="footer-text">
-        <div>Developed by Drei Delosa (@dreivance)</div>
-        <div class="footer-link-row">
-          <a class="footer-link" href="https://www.linkedin.com/in/dreivance/" target="_blank" rel="noopener noreferrer">Developer's Profile</a>
-        </div>
+        Developed by Drei Delosa (<a class="footer-link" href="https://www.linkedin.com/in/dreivance/" target="_blank" rel="noopener noreferrer">@dreivance</a>)
       </div>
     </div>
 
@@ -265,14 +318,26 @@
       <button class="action-btn btn-back" onclick="backToForm()">← Back to Form / Generate Again</button>
 
       <div class="footer-text">
-        <div>Developed by Drei Delosa (@dreivance)</div>
-        <div class="footer-link-row">
-          <a class="footer-link" href="https://www.linkedin.com/in/dreivance/" target="_blank" rel="noopener noreferrer">Developer's Profile</a>
-        </div>
+        Developed by Drei Delosa (<a class="footer-link" href="https://www.linkedin.com/in/dreivance/" target="_blank" rel="noopener noreferrer">@dreivance</a>)
       </div>
     </div>
 
     <div id="qrcode-hidden" style="display:none;"></div>
+  </div>
+
+  <!-- DOUBLE-CHECK EMAIL CONFIRMATION MODAL -->
+  <div id="email-confirm-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h3>Double-Check Your Email</h3>
+      <p class="modal-body-text">
+        Please make sure your email address is spelled correctly, as this serves as your <strong>unique ID</strong> and links to your assigned table:
+      </p>
+      <div class="email-highlight-box" id="confirm-email-preview">-</div>
+      <div class="modal-btn-row">
+        <button class="modal-btn btn-edit-email" onclick="editEmail()">✏️ Edit Email</button>
+        <button class="modal-btn btn-proceed-email" onclick="confirmAndGenerate()">✅ Yes, Proceed</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -368,10 +433,10 @@
       statusEl.style.display = 'block';
     }
 
-    async function processAndGenerate() {
+    // Step 1: Validate fields & show email double-check modal
+    function promptEmailConfirmation() {
       const email = document.getElementById('email').value.trim().toLowerCase();
       const contact = document.getElementById('contact').value.trim();
-      const btn = document.getElementById('generate-btn');
       
       document.getElementById('status-msg').style.display = 'none';
 
@@ -379,6 +444,33 @@
         showStatus("Please enter your Email Address, Contact Number, and take a Selfie.", "error");
         return;
       }
+
+      if (!email.includes('@') || !email.includes('.')) {
+        showStatus("Please enter a valid email address.", "error");
+        return;
+      }
+
+      document.getElementById('confirm-email-preview').innerText = email;
+      document.getElementById('email-confirm-modal').style.display = 'flex';
+    }
+
+    function editEmail() {
+      document.getElementById('email-confirm-modal').style.display = 'none';
+      const emailField = document.getElementById('email');
+      emailField.focus();
+      emailField.select();
+    }
+
+    function confirmAndGenerate() {
+      document.getElementById('email-confirm-modal').style.display = 'none';
+      processAndGenerate();
+    }
+
+    // Step 2: Upload selfie, check table assignment, and build QR pass
+    async function processAndGenerate() {
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      const contact = document.getElementById('contact').value.trim();
+      const btn = document.getElementById('generate-btn');
 
       btn.disabled = true;
       btn.innerText = "Generating QR & Checking Table...";
