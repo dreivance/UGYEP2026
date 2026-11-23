@@ -81,7 +81,30 @@
 
     /* Screen-Wide Full Photo Container */
     .modal-image-wrapper { width: 100%; margin-bottom: 12px; border-radius: 10px; overflow: hidden; border: 2px solid #2e7d32; background: #e8f5e9; }
-    .modal-image { width: 100%; height: auto; max-height: 360px; object-fit: contain; display: block; }
+    .modal-image { width: 100%; height: auto; max-height: 340px; object-fit: contain; display: block; }
+
+    /* Prominent Table Assignment Banner inside Modal */
+    .modal-table-banner {
+      background: linear-gradient(180deg, #fff3e0 0%, #ffe0b2 100%);
+      border: 2px solid #e65100;
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .modal-table-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #bf360c;
+      letter-spacing: 0.8px;
+      display: block;
+    }
+    .modal-table-value {
+      font-family: 'Fredoka One', cursive;
+      font-size: 22px;
+      color: #e65100;
+    }
 
     .details-box { background: #f1f8e9; border: 1px solid #c8e6c9; border-radius: 10px; padding: 10px; margin-bottom: 15px; text-align: left; }
     .details-label { font-size: 11px; text-transform: uppercase; color: #2e7d32; font-weight: bold; }
@@ -128,7 +151,7 @@
           <tr>
             <th>#</th>
             <th>Name</th>
-            <th>Contact</th>
+            <th>Table</th>
             <th>Time</th>
             <th>Device</th>
           </tr>
@@ -148,6 +171,12 @@
     
     <div class="modal-image-wrapper">
       <img id="modal-image" class="modal-image" src="" alt="Selfie Verification">
+    </div>
+
+    <!-- Assigned Table Highlight -->
+    <div class="modal-table-banner">
+      <span class="modal-table-label">Assigned Table</span>
+      <span id="modal-table" class="modal-table-value">-</span>
     </div>
 
     <div class="details-box">
@@ -214,7 +243,6 @@
     document.getElementById('banner-fallback').style.display = 'block';
   }
 
-  // Error Beep Tone for Duplicate Scans
   function playErrorBeep() {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -238,13 +266,11 @@
     } catch(e){}
   }
 
-  // High-Tone Chime + Gate Greeter Sparkle Voice
   function playChimeAndGreeting() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioCtx();
 
-      // High-tone chime triad (A5, E6, and high sparkle A6)
       const osc1 = ctx.createOscillator();
       const osc2 = ctx.createOscillator();
       const osc3 = ctx.createOscillator();
@@ -272,7 +298,6 @@
       if (!('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
 
-      // Automatically detects natural female voice (Neural, Google, Samantha, Zira, etc.)
       const voices = window.speechSynthesis.getVoices();
       const preferredVoice = voices.find(v => {
         const n = v.name.toLowerCase();
@@ -301,11 +326,12 @@
           name: parsed.n || parsed.name || "N/A", 
           contact: parsed.c || parsed.contact || "N/A",
           email: parsed.e || "N/A",
-          image: imageUrl
+          image: imageUrl,
+          table: parsed.t || parsed.table || "Unassigned"
         };
       }
     } catch (e) {}
-    return { name: qrText, contact: "N/A", email: "N/A", image: null };
+    return { name: qrText, contact: "N/A", email: "N/A", image: null, table: "Unassigned" };
   }
 
   function onScanSuccess(decodedText) {
@@ -320,7 +346,6 @@
     const parsed = parseQRData(decodedText);
     const isDuplicate = logs.some(entry => entry.Name === parsed.name && entry.Contact === parsed.contact);
     
-    // DUPLICATE DETECTED
     if (isDuplicate) {
       playErrorBeep();
       showStatus(`⚠️ ${parsed.name} is ALREADY checked in!`, 'warning');
@@ -344,6 +369,7 @@
     document.getElementById('modal-name').innerText = parsed.name;
     document.getElementById('modal-contact').innerText = parsed.contact;
     document.getElementById('modal-email').innerText = parsed.email;
+    document.getElementById('modal-table').innerText = parsed.table;
     
     const imgEl = document.getElementById('modal-image');
     if (parsed.image) {
@@ -371,6 +397,7 @@
     const record = {
       "#": logs.length + 1,
       "Name": pendingRecord.name,
+      "Table": pendingRecord.table,
       "Contact": pendingRecord.contact,
       "Email": pendingRecord.email,
       "Time": timeString,
@@ -392,10 +419,11 @@
           email: pendingRecord.email,
           contact: pendingRecord.contact,
           image: pendingRecord.image || "",
-          device: scannerDeviceName
+          device: scannerDeviceName,
+          table: pendingRecord.table
         })
       });
-      showStatus(`✅ Checked in & Synced: ${pendingRecord.name}`, 'success');
+      showStatus(`✅ Checked in: ${pendingRecord.name} (${pendingRecord.table})`, 'success');
     } catch(e) {
       console.error(e);
       showStatus(`⚠️ Saved locally (Sheet sync failed)`, 'warning');
@@ -422,7 +450,7 @@
     statusEl.className = `status-msg status-${type}`;
     statusEl.innerText = msg;
     statusEl.style.display = 'block';
-    setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+    setTimeout(() => { statusEl.style.display = 'none'; }, 3500);
   }
 
   function renderTable() {
@@ -438,7 +466,7 @@
       <tr>
         <td>${logs.length - index}</td>
         <td><strong>${escapeHtml(log.Name)}</strong></td>
-        <td>${escapeHtml(log.Contact)}</td>
+        <td><span style="background:#ffe0b2; color:#bf360c; padding:2px 5px; border-radius:4px; font-weight:bold;">${escapeHtml(log.Table || "Unassigned")}</span></td>
         <td>${log.Time}</td>
         <td><span style="background:#e8f5e9; color:#1b5e20; padding:2px 4px; border-radius:4px; font-weight:bold;">${escapeHtml(log.Device || "N/A")}</span></td>
       </tr>
@@ -446,7 +474,7 @@
   }
 
   function escapeHtml(text) {
-    return text.replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]; });
+    return String(text).replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]; });
   }
 
   function exportToExcel() {
