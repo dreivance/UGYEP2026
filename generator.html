@@ -180,7 +180,10 @@
     .status-loading { color: #1b5e20; background: #e8f5e9; }
     .status-success { color: #1b5e20; background: #c8e6c9; }
     
+    /* Option 1 Stacked Footer */
     .footer-text { font-size: 11px; font-weight: bold; color: #558b2f; margin-top: 16px; letter-spacing: 0.5px; }
+    .footer-link-row { margin-top: 4px; }
+    .footer-link { color: #e65100; text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -225,7 +228,12 @@
 
       <button class="action-btn btn-generate" id="generate-btn" onclick="processAndGenerate()">Generate My QR Code</button>
       
-      <div class="footer-text">Developed by Drei Delosa (@dreivance)</div>
+      <div class="footer-text">
+        <div>Developed by Drei Delosa (@dreivance)</div>
+        <div class="footer-link-row">
+          <a class="footer-link" href="https://www.linkedin.com/in/dreivance/" target="_blank" rel="noopener noreferrer">Developer's Profile</a>
+        </div>
+      </div>
     </div>
 
     <!-- SCREEN 2: DEDICATED QR RESULT WINDOW -->
@@ -256,10 +264,14 @@
       <button class="action-btn btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save QR Image to Phone</button>
       <button class="action-btn btn-back" onclick="backToForm()">← Back to Form / Generate Again</button>
 
-      <div class="footer-text">Developed by Drei Delosa (@dreivance)</div>
+      <div class="footer-text">
+        <div>Developed by Drei Delosa (@dreivance)</div>
+        <div class="footer-link-row">
+          <a class="footer-link" href="https://www.linkedin.com/in/dreivance/" target="_blank" rel="noopener noreferrer">Developer's Profile</a>
+        </div>
+      </div>
     </div>
 
-    <!-- Hidden staging container for raw QRCode.js generation -->
     <div id="qrcode-hidden" style="display:none;"></div>
   </div>
 
@@ -277,7 +289,6 @@
       </svg>
     `;
 
-    // Domain Autocomplete Handler
     const emailInput = document.getElementById('email');
     const suggestionPill = document.getElementById('domain-suggestion-pill');
     const suggestedText = document.getElementById('suggested-email-text');
@@ -388,7 +399,6 @@
           const attendeeName = result.name || "Guest";
           await generateCustomQRCode(attendeeName, contact, email, result.url, tableNumber, tableFound);
           
-          // Switch to dedicated QR result screen
           document.getElementById('form-screen').style.display = 'none';
           document.getElementById('result-screen').style.display = 'block';
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -414,7 +424,6 @@
     function generateCustomQRCode(attendeeName, contact, email, driveUrl, tableNumber, tableFound) {
       return new Promise((resolve) => {
         const normalizedEmail = email.trim().toLowerCase();
-        // Embed verified Event Flag ('app': 'UG_FIESTA'), Name, Contact, Email, Selfie URL, and Table
         const payload = {
           app: "UG_FIESTA",
           n: attendeeName,
@@ -486,7 +495,6 @@
               tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
             }
 
-            // Build downloadable pass image
             const passCanvas = document.createElement('canvas');
             passCanvas.width = 320;
             passCanvas.height = 415;
