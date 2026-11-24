@@ -78,7 +78,7 @@
     .domain-suggestion:active { transform: scale(0.97); }
     .domain-suggestion span { color: #e65100; }
 
-    /* Live Camera Only Selfie Box (No Gallery Upload Allowed) */
+    /* Live Camera Only Selfie Box */
     .selfie-camera-box {
       background: #14281d;
       border: 2.5px solid #2e7d32;
@@ -89,7 +89,7 @@
     .camera-viewport {
       width: 100%;
       max-width: 260px;
-      aspect-ratio: 1 / 1;
+      height: 260px;
       margin: 0 auto 10px auto;
       border-radius: 14px;
       overflow: hidden;
@@ -104,7 +104,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1); /* Natural selfie mirror preview */
+      transform: scaleX(-1);
       display: none;
     }
     #photo-preview {
@@ -176,6 +176,7 @@
     .btn-generate:disabled { background: #b0bec5; box-shadow: none; cursor: not-allowed; }
     
     .btn-download { background: linear-gradient(180deg, #43a047 0%, #2e7d32 100%); color: white; box-shadow: 0 5px 0 #1b5e20; margin-top: 10px; }
+    .btn-download:disabled { background: #9e9e9e; box-shadow: none; cursor: not-allowed; }
     .btn-back {
       background: linear-gradient(180deg, #78909c 0%, #546e7a 100%);
       color: white;
@@ -426,7 +427,7 @@
         <input type="tel" id="contact" placeholder="e.g. 09171234567" required autocomplete="tel">
       </div>
 
-      <!-- LIVE CAMERA SELFIE CAPTURE ONLY (NO PHOTO LIBRARY UPLOAD) -->
+      <!-- LIVE CAMERA SELFIE CAPTURE ONLY -->
       <div class="input-group">
         <label>Live Selfie (Camera Capture Only)</label>
         <div class="selfie-camera-box">
@@ -442,7 +443,7 @@
           <button type="button" id="open-cam-btn" class="cam-action-btn btn-open-cam" onclick="startSelfieCamera()">📷 Open Camera</button>
           <button type="button" id="snap-btn" class="cam-action-btn btn-snap-selfie" onclick="captureSelfie()">📸 Capture Selfie</button>
           <button type="button" id="retake-btn" class="cam-action-btn btn-retake-selfie" onclick="retakeSelfie()">🔄 Retake Selfie</button>
-          <div class="live-badge">Live camera capture required • Gallery upload disabled</div>
+          <div class="live-badge">Live camera capture required</div>
         </div>
       </div>
 
@@ -453,17 +454,12 @@
       </div>
     </div>
 
-    <!-- SCREEN 2: DEDICATED QR RESULT WINDOW -->
+    <!-- SCREEN 2: DEDICATED QR RESULT WINDOW (BANNER REMOVED) -->
     <div class="card" id="result-screen">
-      <div class="banner-container">
-        <img id="banner-img-2" src="banner.jpg" alt="Unified Fiesta" class="event-banner" onerror="handleBannerError('2')">
-        <div id="banner-fallback-2" class="banner-fallback">
-          <h1>🎉 UNIFIED FIESTA 🎉</h1>
-        </div>
-      </div>
-
       <h2>Your Fiesta Pass</h2>
       <p class="sub">Present this QR code at the entrance</p>
+
+      <div class="status-msg" id="result-status-msg"></div>
 
       <div id="qr-container">
         <img id="final-qr-img" src="" alt="Your Event QR Code">
@@ -475,11 +471,11 @@
       </div>
 
       <div class="save-instruction-box">
-        📱 Tip: You can take a <strong>screenshot</strong> right now or tap the button below to <strong>save the QR image</strong> to your phone!
+        Save a screenshot of this QR code or save the QR image to your phone (button below)
       </div>
 
-      <button class="action-btn btn-download" id="download-btn" onclick="downloadQR()">⬇️ Save QR Image to Phone</button>
-      <button class="action-btn btn-back" onclick="backToForm()">Generate Again</button>
+      <button type="button" class="action-btn btn-download" id="download-btn" onclick="saveQRToGallery()">⬇️ Save QR Image to Phone</button>
+      <button type="button" class="action-btn btn-back" onclick="backToForm()">Generate Again</button>
 
       <div class="footer-text">
         Developed by Drei Delosa (<a class="footer-link" href="https://www.linkedin.com/in/dreivance/" target="_blank" rel="noopener noreferrer">@dreivance</a>)
@@ -498,8 +494,8 @@
       </p>
       <div class="email-highlight-box" id="confirm-email-preview">-</div>
       <div class="modal-btn-row">
-        <button class="modal-btn btn-edit-email" onclick="editEmail()">✏️ Edit Email</button>
-        <button class="modal-btn btn-proceed-email" onclick="confirmAndGenerate()">✅ Yes, Proceed</button>
+        <button type="button" class="modal-btn btn-edit-email" onclick="editEmail()">✏️ Edit Email</button>
+        <button type="button" class="modal-btn btn-proceed-email" onclick="confirmAndGenerate()">✅ Yes, Proceed</button>
       </div>
     </div>
   </div>
@@ -514,13 +510,14 @@
     });
 
     let base64Image = "";
+    let finalPassBlob = null;
     let finalDownloadDataUrl = "";
     let activeMediaStream = null;
     const DEFAULT_DOMAIN = "unified-accounting.com";
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
     const LOGO_PNG_PATH = "Unified%20Global%20Logo%202023-08.png";
 
-    // Stop camera automatically if user leaves tab or locks phone
+    // Stop camera automatically if user switches apps or locks phone
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && activeMediaStream) {
         stopSelfieCamera();
@@ -566,12 +563,29 @@
     }
 
     function handleBannerError(idx) {
-      document.getElementById('banner-img-' + idx).style.display = 'none';
-      document.getElementById('banner-fallback-' + idx).style.display = 'block';
+      const img = document.getElementById('banner-img-' + idx);
+      const fb = document.getElementById('banner-fallback-' + idx);
+      if (img) img.style.display = 'none';
+      if (fb) fb.style.display = 'block';
+    }
+
+    // Cross-browser rounded rectangle helper (compatible with all Android & iOS WebViews)
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
     }
 
     // =========================================================================
-    // LIVE FRONT-CAMERA SELFIE CAPTURE (GALLERY / FILE PICKER BLOCKED)
+    // LIVE FRONT-CAMERA SELFIE CAPTURE (iOS SAFARI + ANDROID CHROME COMPATIBLE)
     // =========================================================================
     async function startSelfieCamera() {
       const openBtn = document.getElementById('open-cam-btn');
@@ -582,22 +596,36 @@
       const idleMsg = document.getElementById('camera-idle-msg');
 
       document.getElementById('status-msg').style.display = 'none';
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showStatus("Camera API not supported in this browser. Please open in Safari or Chrome.", "error");
+        return;
+      }
+
       openBtn.disabled = true;
       openBtn.innerText = "Opening Camera...";
 
       try {
         stopSelfieCamera();
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: "user" },
-            width: { ideal: 640 },
-            height: { ideal: 640 }
-          },
-          audio: false
-        });
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user" },
+            audio: false
+          });
+        } catch (firstErr) {
+          // Fallback for Android devices that reject facingMode constraints
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+        }
 
         activeMediaStream = stream;
+        videoEl.setAttribute('playsinline', '');
+        videoEl.setAttribute('muted', '');
+        videoEl.muted = true;
         videoEl.srcObject = stream;
         await videoEl.play();
 
@@ -610,7 +638,7 @@
         snapBtn.style.display = 'inline-block';
       } catch (err) {
         console.error("Camera error:", err);
-        showStatus("Camera access is required to take a live selfie. Please allow camera permission in your browser settings.", "error");
+        showStatus("Camera access is required to take a live selfie. Please allow camera permission.", "error");
       } finally {
         openBtn.disabled = false;
         openBtn.innerText = "📷 Open Camera";
@@ -635,7 +663,10 @@
       const snapBtn = document.getElementById('snap-btn');
       const retakeBtn = document.getElementById('retake-btn');
 
-      if (!videoEl.videoWidth || !videoEl.videoHeight) return;
+      if (!videoEl.videoWidth || !videoEl.videoHeight) {
+        showStatus("Camera is still warming up. Please tap Capture Selfie again.", "error");
+        return;
+      }
 
       const MAX_SIZE = 480;
       const vw = videoEl.videoWidth;
@@ -649,7 +680,6 @@
       canvas.height = MAX_SIZE;
       const ctx = canvas.getContext('2d');
 
-      // Flip horizontally so the saved selfie matches the natural mirror preview
       ctx.translate(MAX_SIZE, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(videoEl, sx, sy, side, side, 0, 0, MAX_SIZE, MAX_SIZE);
@@ -671,8 +701,9 @@
       startSelfieCamera();
     }
 
-    function showStatus(msg, type) {
-      const statusEl = document.getElementById('status-msg');
+    function showStatus(msg, type, targetId = 'status-msg') {
+      const statusEl = document.getElementById(targetId);
+      if (!statusEl) return;
       statusEl.innerText = msg;
       statusEl.className = `status-msg status-${type}`;
       statusEl.style.display = 'block';
@@ -752,6 +783,7 @@
       try {
         await generateCustomQRCode(attendeeName, contact, email, driveUrl, tableNumber, tableFound);
         document.getElementById('form-screen').style.display = 'none';
+        document.getElementById('result-status-msg').style.display = 'none';
         document.getElementById('result-screen').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (qrErr) {
@@ -772,83 +804,90 @@
     }
 
     function renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound) {
-      const qrDataUrl = qrCanvas.toDataURL("image/png");
-      document.getElementById('final-qr-img').src = qrDataUrl;
-      document.getElementById('result-attendee-info').innerText = attendeeName !== "Guest" 
-        ? `${attendeeName} (${normalizedEmail})` 
-        : normalizedEmail;
+      return new Promise((resolve) => {
+        const qrDataUrl = qrCanvas.toDataURL("image/png");
+        document.getElementById('final-qr-img').src = qrDataUrl;
+        document.getElementById('result-attendee-info').innerText = attendeeName !== "Guest" 
+          ? `${attendeeName} (${normalizedEmail})` 
+          : normalizedEmail;
 
-      const tableBox = document.getElementById('table-box');
-      const tableLabel = document.getElementById('table-box-label');
-      const tableDisplay = document.getElementById('assigned-table-display');
+        const tableBox = document.getElementById('table-box');
+        const tableLabel = document.getElementById('table-box-label');
+        const tableDisplay = document.getElementById('assigned-table-display');
 
-      if (tableFound) {
-        tableBox.style.background = "#e8f5e9";
-        tableBox.style.borderColor = "#2e7d32";
-        tableLabel.style.display = "block";
-        tableDisplay.className = "table-number-value";
-        tableDisplay.innerText = tableNumber;
-      } else {
-        tableBox.style.background = "#fff3e0";
-        tableBox.style.borderColor = "#e65100";
-        tableLabel.style.display = "none";
-        tableDisplay.className = "table-not-found-note";
-        tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
-      }
+        if (tableFound) {
+          tableBox.style.background = "#e8f5e9";
+          tableBox.style.borderColor = "#2e7d32";
+          tableLabel.style.display = "block";
+          tableDisplay.className = "table-number-value";
+          tableDisplay.innerText = tableNumber;
+        } else {
+          tableBox.style.background = "#fff3e0";
+          tableBox.style.borderColor = "#e65100";
+          tableLabel.style.display = "none";
+          tableDisplay.className = "table-not-found-note";
+          tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
+        }
 
-      const passCanvas = document.createElement('canvas');
-      passCanvas.width = 320;
-      passCanvas.height = 415;
-      const pCtx = passCanvas.getContext('2d');
+        // High-resolution Pass Canvas (640x830) so saved gallery photos are crisp on Retina/AMOLED screens
+        const passCanvas = document.createElement('canvas');
+        passCanvas.width = 640;
+        passCanvas.height = 830;
+        const pCtx = passCanvas.getContext('2d');
 
-      pCtx.fillStyle = "#fffdf5";
-      pCtx.fillRect(0, 0, 320, 415);
+        pCtx.fillStyle = "#fffdf5";
+        pCtx.fillRect(0, 0, 640, 830);
 
-      pCtx.strokeStyle = "#2e7d32";
-      pCtx.lineWidth = 8;
-      pCtx.strokeRect(4, 4, 312, 407);
-
-      pCtx.fillStyle = "#e65100";
-      pCtx.font = "bold 20px sans-serif";
-      pCtx.textAlign = "center";
-      pCtx.fillText("UNIFIED FIESTA PASS", 160, 36);
-
-      pCtx.drawImage(qrCanvas, 40, 50, 240, 240);
-
-      pCtx.fillStyle = "#1b4332";
-      pCtx.font = "bold 15px sans-serif";
-      pCtx.fillText(attendeeName !== "Guest" ? attendeeName : normalizedEmail, 160, 312);
-
-      if (attendeeName !== "Guest") {
-        pCtx.fillStyle = "#2e7d32";
-        pCtx.font = "12px sans-serif";
-        pCtx.fillText(normalizedEmail, 160, 330);
-      }
-
-      if (tableFound) {
-        pCtx.fillStyle = "#e8f5e9";
-        pCtx.fillRect(45, 344, 230, 46);
         pCtx.strokeStyle = "#2e7d32";
-        pCtx.lineWidth = 2;
-        pCtx.strokeRect(45, 344, 230, 46);
+        pCtx.lineWidth = 16;
+        pCtx.strokeRect(8, 8, 624, 814);
 
-        pCtx.fillStyle = "#2e7d32";
-        pCtx.font = "bold 16px sans-serif";
-        pCtx.fillText("TABLE: " + tableNumber, 160, 373);
-      } else {
-        pCtx.fillStyle = "#fff3e0";
-        pCtx.fillRect(25, 344, 270, 48);
-        pCtx.strokeStyle = "#e65100";
-        pCtx.lineWidth = 2;
-        pCtx.strokeRect(25, 344, 270, 48);
+        pCtx.fillStyle = "#e65100";
+        pCtx.font = "bold 40px sans-serif";
+        pCtx.textAlign = "center";
+        pCtx.fillText("UNIFIED FIESTA PASS", 320, 72);
 
-        pCtx.fillStyle = "#bf360c";
-        pCtx.font = "bold 11px sans-serif";
-        pCtx.fillText("Table assignment not found.", 160, 364);
-        pCtx.fillText("Ask registration for your table #", 160, 380);
-      }
+        pCtx.drawImage(qrCanvas, 80, 100, 480, 480);
 
-      finalDownloadDataUrl = passCanvas.toDataURL("image/png");
+        pCtx.fillStyle = "#1b4332";
+        pCtx.font = "bold 30px sans-serif";
+        pCtx.fillText(attendeeName !== "Guest" ? attendeeName : normalizedEmail, 320, 624);
+
+        if (attendeeName !== "Guest") {
+          pCtx.fillStyle = "#2e7d32";
+          pCtx.font = "24px sans-serif";
+          pCtx.fillText(normalizedEmail, 320, 660);
+        }
+
+        if (tableFound) {
+          pCtx.fillStyle = "#e8f5e9";
+          pCtx.fillRect(90, 688, 460, 92);
+          pCtx.strokeStyle = "#2e7d32";
+          pCtx.lineWidth = 4;
+          pCtx.strokeRect(90, 688, 460, 92);
+
+          pCtx.fillStyle = "#2e7d32";
+          pCtx.font = "bold 32px sans-serif";
+          pCtx.fillText("TABLE: " + tableNumber, 320, 746);
+        } else {
+          pCtx.fillStyle = "#fff3e0";
+          pCtx.fillRect(50, 688, 540, 96);
+          pCtx.strokeStyle = "#e65100";
+          pCtx.lineWidth = 4;
+          pCtx.strokeRect(50, 688, 540, 96);
+
+          pCtx.fillStyle = "#bf360c";
+          pCtx.font = "bold 22px sans-serif";
+          pCtx.fillText("Table assignment not found.", 320, 728);
+          pCtx.fillText("Ask registration for your table #", 320, 760);
+        }
+
+        finalDownloadDataUrl = passCanvas.toDataURL("image/png");
+        passCanvas.toBlob((blob) => {
+          finalPassBlob = blob;
+          resolve();
+        }, "image/png");
+      });
     }
 
     function generateCustomQRCode(attendeeName, contact, email, driveUrl, tableNumber, tableFound) {
@@ -868,8 +907,8 @@
 
         new QRCode(hiddenContainer, {
           text: qrString,
-          width: 240,
-          height: 240,
+          width: 480,
+          height: 480,
           colorDark : "#1b5e20",
           colorLight : "#ffffff",
           correctLevel : QRCode.CorrectLevel.H
@@ -878,50 +917,93 @@
         setTimeout(() => {
           const rawCanvas = hiddenContainer.querySelector("canvas");
           const qrCanvas = document.createElement('canvas');
-          qrCanvas.width = 240;
-          qrCanvas.height = 240;
+          qrCanvas.width = 480;
+          qrCanvas.height = 480;
           const qCtx = qrCanvas.getContext('2d');
 
-          qCtx.drawImage(rawCanvas, 0, 0, 240, 240);
+          qCtx.drawImage(rawCanvas, 0, 0, 480, 480);
 
           const logoImg = new Image();
-          logoImg.onload = function() {
-            const maxBoxSize = 62;
-            const naturalW = logoImg.naturalWidth || logoImg.width || 62;
-            const naturalH = logoImg.naturalHeight || logoImg.height || 62;
+          logoImg.crossOrigin = "anonymous";
+          logoImg.onload = async function() {
+            // Preserve original aspect ratio of Unified Global Logo 2023-08.png
+            const maxBoxSize = 124;
+            const naturalW = logoImg.naturalWidth || logoImg.width || 124;
+            const naturalH = logoImg.naturalHeight || logoImg.height || 124;
             const scale = Math.min(maxBoxSize / naturalW, maxBoxSize / naturalH);
             const drawW = naturalW * scale;
             const drawH = naturalH * scale;
-            const pad = 5;
-            const x = (240 - drawW) / 2;
-            const y = (240 - drawH) / 2;
+            const pad = 10;
+            const x = (480 - drawW) / 2;
+            const y = (480 - drawH) / 2;
 
             qCtx.fillStyle = "#ffffff";
-            qCtx.beginPath();
-            qCtx.roundRect(x - pad, y - pad, drawW + pad * 2, drawH + pad * 2, 10);
+            drawRoundedRect(qCtx, x - pad, y - pad, drawW + pad * 2, drawH + pad * 2, 18);
             qCtx.fill();
 
             qCtx.drawImage(logoImg, x, y, drawW, drawH);
 
-            renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
+            await renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
             resolve();
           };
-          logoImg.onerror = function() {
-            renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
+          logoImg.onerror = async function() {
+            await renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
             resolve();
           };
           logoImg.src = LOGO_PNG_PATH;
-        }, 120);
+        }, 150);
       });
     }
 
-    function downloadQR() {
-      const emailPrefix = document.getElementById('email').value.trim().toLowerCase().split('@')[0] || "guest";
-      if (finalDownloadDataUrl) {
+    // =========================================================================
+    // SAVE QR TO PHONE GALLERY (iOS PHOTOS & ANDROID GALLERY COMPATIBLE)
+    // =========================================================================
+    async function saveQRToGallery() {
+      const emailPrefix = (document.getElementById('email').value.trim().toLowerCase().split('@')[0] || "guest")
+        .replace(/[^a-z0-9_-]/g, "_");
+      const fileName = `Unified_Fiesta_QR_${emailPrefix}.png`;
+
+      try {
+        let blob = finalPassBlob;
+        if (!blob && finalDownloadDataUrl) {
+          const res = await fetch(finalDownloadDataUrl);
+          blob = await res.blob();
+        }
+
+        if (!blob) {
+          showStatus("QR image is not ready yet. Please try again.", "error", "result-status-msg");
+          return;
+        }
+
+        const file = new File([blob], fileName, { type: "image/png" });
+
+        // Primary path for iOS Safari & Android Chrome: Native Share Sheet -> "Save Image" (saves directly to Photos/Gallery)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: "Unified Fiesta QR Pass"
+          });
+          showStatus("✅ Select 'Save Image' / 'Save to Photos' to store in your gallery.", "success", "result-status-msg");
+          return;
+        }
+
+        // Fallback for Android / Desktop browsers without Web Share file support: Blob URL Download
+        const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `Fiesta_QR_${emailPrefix}.png`;
-        link.href = finalDownloadDataUrl;
+        link.href = blobUrl;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+        showStatus("✅ QR image saved to your device!", "success", "result-status-msg");
+      } catch (err) {
+        // Ignore user cancelling the share sheet
+        if (err && err.name === "AbortError") return;
+        console.error("Save error:", err);
+        showStatus("Tip: You can also press & hold the QR code image above and tap 'Save to Photos', or take a screenshot.", "error", "result-status-msg");
       }
     }
   </script>
