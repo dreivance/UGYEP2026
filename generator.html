@@ -20,7 +20,7 @@
       min-height: 100vh;
     }
 
-    /* Authentic Fiesta Banderitas Bunting (Curved String + Triangular Pennants) */
+    /* Horizontally Centered Fiesta Banderitas Bunting */
     .flag-banner {
       width: 100%;
       height: 38px;
@@ -30,7 +30,7 @@
       z-index: 100;
       pointer-events: none;
       background-repeat: repeat-x;
-      background-position: top left;
+      background-position: top center;
       background-size: 240px 38px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='38' viewBox='0 0 240 38'%3E%3Cdefs%3E%3Cfilter id='s' x='-10%25' y='-10%25' width='120%25' height='130%25'%3E%3CfeDropShadow dx='0' dy='1.5' stdDeviation='1' flood-color='%23000' flood-opacity='0.28'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23s)'%3E%3Cpolygon points='4,3 38,8 19,31' fill='%23e53935'/%3E%3Cpolygon points='42,8 76,12 58,35' fill='%23fdd835'/%3E%3Cpolygon points='80,12 116,13 98,36' fill='%231e88e5'/%3E%3Cpolygon points='124,13 160,12 142,36' fill='%2343a047'/%3E%3Cpolygon points='164,12 198,8 182,35' fill='%23fb8c00'/%3E%3Cpolygon points='202,8 236,3 221,31' fill='%238e24aa'/%3E%3C/g%3E%3Cpath d='M 0 2 Q 120 22 240 2' fill='none' stroke='%231b4332' stroke-width='2.2'/%3E%3C/svg%3E");
     }
@@ -276,11 +276,23 @@
       border-radius: 8px;
       display: block;
     }
+    /* Two-Line Name and Email Display */
     .attendee-summary-tag {
-      margin-top: 10px;
+      margin-top: 12px;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .attendee-name-line {
       font-weight: 700;
-      font-size: 14px;
+      font-size: 16px;
       color: #1b4332;
+    }
+    .attendee-email-line {
+      font-weight: 700;
+      font-size: 13px;
+      color: #2e7d32;
+      margin-top: 2px;
+      word-break: break-all;
     }
     .table-assignment-box {
       margin-top: 10px;
@@ -414,7 +426,7 @@
       <div class="status-msg" id="status-msg"></div>
 
       <div class="input-group">
-        <label for="email">Email Address</label>
+        <label for="email">Unified Email</label>
         <input type="email" id="email" list="domain-options" placeholder="e.g. juan@unified-accounting.com" required autocomplete="off">
         <datalist id="domain-options"></datalist>
         <div id="domain-suggestion-pill" class="domain-suggestion" onclick="applyDomainSuggestion()">
@@ -567,6 +579,12 @@
       if (fb) fb.style.display = 'block';
     }
 
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"']/g, function(m) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m];
+      });
+    }
+
     function drawRoundedRect(ctx, x, y, width, height, radius) {
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
@@ -579,6 +597,53 @@
       ctx.lineTo(x, y + radius);
       ctx.quadraticCurveTo(x, y, x + radius, y);
       ctx.closePath();
+    }
+
+    // Draw centered Fiesta Banderitas across the top of the downloadable PNG pass
+    function drawCenteredBanderitas(ctx, canvasWidth) {
+      const colors = ['#e53935', '#fdd835', '#1e88e5', '#43a047', '#fb8c00', '#8e24aa'];
+      const flagCount = 12;
+      const spanWidth = canvasWidth - 48; // 24px inset on each side for centered symmetry
+      const startX = (canvasWidth - spanWidth) / 2;
+      const step = spanWidth / flagCount;
+
+      const getStringY = (x) => {
+        const t = (x - startX) / spanWidth; // 0 to 1
+        return 24 + 26 * 4 * t * (1 - t); // Smooth symmetric catenary curve
+      };
+
+      ctx.save();
+      for (let i = 0; i < flagCount; i++) {
+        const x1 = startX + i * step + 3;
+        const x2 = startX + (i + 1) * step - 3;
+        const xm = (x1 + x2) / 2;
+        const y1 = getStringY(x1);
+        const y2 = getStringY(x2);
+        const ym = (y1 + y2) / 2 + 34;
+
+        ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetY = 2;
+
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(xm, ym);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Draped dark-green string
+      ctx.save();
+      ctx.strokeStyle = "#1b4332";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(startX - 4, 24);
+      ctx.quadraticCurveTo(canvasWidth / 2, 76, startX + spanWidth + 4, 24);
+      ctx.stroke();
+      ctx.restore();
     }
 
     async function startSelfieCamera() {
@@ -713,12 +778,12 @@
       document.getElementById('status-msg').style.display = 'none';
 
       if (!email || !contact || !base64Image) {
-        showStatus("Please enter your Email Address, Contact Number, and capture a live Selfie.", "error");
+        showStatus("Please enter your Unified Email, Contact Number, and capture a live Selfie.", "error");
         return;
       }
 
       if (!email.includes('@') || !email.includes('.')) {
-        showStatus("Please enter a valid email address.", "error");
+        showStatus("Please enter a valid Unified Email address.", "error");
         return;
       }
 
@@ -796,13 +861,29 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound) {
+    async function renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound) {
+      // Ensure web fonts ('Fredoka One' & 'Quicksand') are ready before drawing on canvas
+      if (document.fonts && document.fonts.ready) {
+        try { await document.fonts.ready; } catch (e) {}
+      }
+
       return new Promise((resolve) => {
         const qrDataUrl = qrCanvas.toDataURL("image/png");
         document.getElementById('final-qr-img').src = qrDataUrl;
-        document.getElementById('result-attendee-info').innerText = attendeeName !== "Guest" 
-          ? `${attendeeName} (${normalizedEmail})` 
-          : normalizedEmail;
+
+        // Render Name and Email in two separate lines on screen
+        const infoContainer = document.getElementById('result-attendee-info');
+        if (attendeeName && attendeeName !== "Guest") {
+          infoContainer.innerHTML = `
+            <div class="attendee-name-line">${escapeHtml(attendeeName)}</div>
+            <div class="attendee-email-line">${escapeHtml(normalizedEmail)}</div>
+          `;
+        } else {
+          infoContainer.innerHTML = `
+            <div class="attendee-name-line">Guest</div>
+            <div class="attendee-email-line">${escapeHtml(normalizedEmail)}</div>
+          `;
+        }
 
         const tableBox = document.getElementById('table-box');
         const tableLabel = document.getElementById('table-box-label');
@@ -822,57 +903,129 @@
           tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
         }
 
+        // High-Resolution Downloadable Fiesta Pass matching on-screen design, fonts, borders & centered banderitas
+        const W = 720;
+        const H = 980;
         const passCanvas = document.createElement('canvas');
-        passCanvas.width = 640;
-        passCanvas.height = 830;
+        passCanvas.width = W;
+        passCanvas.height = H;
         const pCtx = passCanvas.getContext('2d');
 
+        // Soft Fiesta Sky-to-Mint Backdrop
+        const bgGrad = pCtx.createLinearGradient(0, 0, 0, H);
+        bgGrad.addColorStop(0, "#70bbfd");
+        bgGrad.addColorStop(0.5, "#a2d2ff");
+        bgGrad.addColorStop(1, "#c8e6c9");
+        pCtx.fillStyle = bgGrad;
+        pCtx.fillRect(0, 0, W, H);
+
+        // Cream Card with Outer Mint Outline & Dark Green Border (matching .card CSS)
+        const cardX = 32;
+        const cardY = 44;
+        const cardW = W - 64;
+        const cardH = H - 84;
+
+        pCtx.fillStyle = "#a5d6a7";
+        drawRoundedRect(pCtx, cardX - 8, cardY - 8, cardW + 16, cardH + 16, 44);
+        pCtx.fill();
+
         pCtx.fillStyle = "#fffdf5";
-        pCtx.fillRect(0, 0, 640, 830);
-
+        drawRoundedRect(pCtx, cardX, cardY, cardW, cardH, 36);
+        pCtx.fill();
         pCtx.strokeStyle = "#2e7d32";
-        pCtx.lineWidth = 16;
-        pCtx.strokeRect(8, 8, 624, 814);
+        pCtx.lineWidth = 8;
+        pCtx.stroke();
 
+        // Centered Fiesta Banderitas across the top
+        drawCenteredBanderitas(pCtx, W);
+
+        // Title ("YOUR FIESTA PASS" in Fredoka One)
         pCtx.fillStyle = "#e65100";
-        pCtx.font = "bold 40px sans-serif";
+        pCtx.font = "44px 'Fredoka One', sans-serif";
         pCtx.textAlign = "center";
-        pCtx.fillText("UNIFIED FIESTA PASS", 320, 72);
+        pCtx.fillText("YOUR FIESTA PASS", W / 2, 152);
 
-        pCtx.drawImage(qrCanvas, 80, 100, 480, 480);
+        // Subtitle ("Present this QR code at the entrance" in Quicksand Bold)
+        pCtx.fillStyle = "#2e7d32";
+        pCtx.font = "700 22px 'Quicksand', sans-serif";
+        pCtx.fillText("Present this QR code at the entrance", W / 2, 188);
 
+        // Inner White QR Box with Dashed Green Border (matching #qr-container)
+        const boxX = 76;
+        const boxY = 216;
+        const boxW = W - 152;
+        const boxH = 636;
+
+        pCtx.fillStyle = "#ffffff";
+        drawRoundedRect(pCtx, boxX, boxY, boxW, boxH, 28);
+        pCtx.fill();
+
+        pCtx.save();
+        pCtx.strokeStyle = "#2e7d32";
+        pCtx.lineWidth = 5;
+        pCtx.setLineDash([14, 10]);
+        drawRoundedRect(pCtx, boxX, boxY, boxW, boxH, 28);
+        pCtx.stroke();
+        pCtx.restore();
+
+        // Centered QR Code Image
+        const qrSize = 400;
+        pCtx.drawImage(qrCanvas, (W - qrSize) / 2, 242, qrSize, qrSize);
+
+        // Two-Line Name & Email Display inside the pass
+        const displayName = (attendeeName && attendeeName !== "Guest") ? attendeeName : "Guest";
         pCtx.fillStyle = "#1b4332";
-        pCtx.font = "bold 30px sans-serif";
-        pCtx.fillText(attendeeName !== "Guest" ? attendeeName : normalizedEmail, 320, 624);
+        pCtx.font = "700 28px 'Quicksand', sans-serif";
+        pCtx.fillText(displayName, W / 2, 686);
 
-        if (attendeeName !== "Guest") {
-          pCtx.fillStyle = "#2e7d32";
-          pCtx.font = "24px sans-serif";
-          pCtx.fillText(normalizedEmail, 320, 660);
-        }
+        pCtx.fillStyle = "#2e7d32";
+        pCtx.font = "700 21px 'Quicksand', sans-serif";
+        pCtx.fillText(normalizedEmail, W / 2, 720);
 
+        // Assigned Table Box (matching .table-assignment-box)
         if (tableFound) {
+          const tBoxW = 420;
+          const tBoxH = 92;
+          const tBoxX = (W - tBoxW) / 2;
+          const tBoxY = 740;
+
           pCtx.fillStyle = "#e8f5e9";
-          pCtx.fillRect(90, 688, 460, 92);
+          drawRoundedRect(pCtx, tBoxX, tBoxY, tBoxW, tBoxH, 20);
+          pCtx.fill();
           pCtx.strokeStyle = "#2e7d32";
           pCtx.lineWidth = 4;
-          pCtx.strokeRect(90, 688, 460, 92);
+          pCtx.stroke();
 
           pCtx.fillStyle = "#2e7d32";
-          pCtx.font = "bold 32px sans-serif";
-          pCtx.fillText("TABLE: " + tableNumber, 320, 746);
+          pCtx.font = "700 17px 'Quicksand', sans-serif";
+          pCtx.fillText("ASSIGNED TABLE", W / 2, tBoxY + 32);
+
+          pCtx.fillStyle = "#e65100";
+          pCtx.font = "36px 'Fredoka One', sans-serif";
+          pCtx.fillText(String(tableNumber), W / 2, tBoxY + 74);
         } else {
+          const tBoxW = 480;
+          const tBoxH = 92;
+          const tBoxX = (W - tBoxW) / 2;
+          const tBoxY = 740;
+
           pCtx.fillStyle = "#fff3e0";
-          pCtx.fillRect(50, 688, 540, 96);
+          drawRoundedRect(pCtx, tBoxX, tBoxY, tBoxW, tBoxH, 20);
+          pCtx.fill();
           pCtx.strokeStyle = "#e65100";
           pCtx.lineWidth = 4;
-          pCtx.strokeRect(50, 688, 540, 96);
+          pCtx.stroke();
 
           pCtx.fillStyle = "#bf360c";
-          pCtx.font = "bold 22px sans-serif";
-          pCtx.fillText("Table assignment not found.", 320, 728);
-          pCtx.fillText("Ask registration for your table #", 320, 760);
+          pCtx.font = "700 18px 'Quicksand', sans-serif";
+          pCtx.fillText("Table assignment not found.", W / 2, tBoxY + 38);
+          pCtx.fillText("Kindly ask registration for your table number.", W / 2, tBoxY + 68);
         }
+
+        // Footer Credit inside the card
+        pCtx.fillStyle = "#558b2f";
+        pCtx.font = "700 17px 'Quicksand', sans-serif";
+        pCtx.fillText("Developed by Drei Delosa (@dreivance)", W / 2, cardY + cardH - 26);
 
         finalDownloadDataUrl = passCanvas.toDataURL("image/png");
         passCanvas.toBlob((blob) => {

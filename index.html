@@ -21,7 +21,7 @@
       min-height: 100vh;
     }
 
-    /* Authentic Fiesta Banderitas Bunting (Curved String + Triangular Pennants) */
+    /* Horizontally Centered Fiesta Banderitas Bunting */
     .flag-banner {
       width: 100%;
       height: 38px;
@@ -31,7 +31,7 @@
       z-index: 100;
       pointer-events: none;
       background-repeat: repeat-x;
-      background-position: top left;
+      background-position: top center;
       background-size: 240px 38px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='38' viewBox='0 0 240 38'%3E%3Cdefs%3E%3Cfilter id='s' x='-10%25' y='-10%25' width='120%25' height='130%25'%3E%3CfeDropShadow dx='0' dy='1.5' stdDeviation='1' flood-color='%23000' flood-opacity='0.28'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23s)'%3E%3Cpolygon points='4,3 38,8 19,31' fill='%23e53935'/%3E%3Cpolygon points='42,8 76,12 58,35' fill='%23fdd835'/%3E%3Cpolygon points='80,12 116,13 98,36' fill='%231e88e5'/%3E%3Cpolygon points='124,13 160,12 142,36' fill='%2343a047'/%3E%3Cpolygon points='164,12 198,8 182,35' fill='%23fb8c00'/%3E%3Cpolygon points='202,8 236,3 221,31' fill='%238e24aa'/%3E%3C/g%3E%3Cpath d='M 0 2 Q 120 22 240 2' fill='none' stroke='%231b4332' stroke-width='2.2'/%3E%3C/svg%3E");
     }
@@ -211,8 +211,40 @@
 
     /* Modals */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.72); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
-    .modal-card { background: #fffdf5; border-radius: 18px; padding: 16px; width: 100%; max-width: 420px; text-align: center; border: 4px solid #2e7d32; max-height: 92vh; overflow-y: auto; }
+    .modal-card { background: #fffdf5; border-radius: 18px; padding: 18px; width: 100%; max-width: 420px; text-align: center; border: 4px solid #2e7d32; max-height: 92vh; overflow-y: auto; }
     .modal-card h3 { font-family: 'Fredoka One', cursive; color: #e65100; font-size: 22px; margin: 0 0 12px 0; }
+
+    /* Scanner Name Modal Input */
+    .scanner-name-desc {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1b4332;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .scanner-name-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 2px solid #2e7d32;
+      border-radius: 10px;
+      font-family: 'Quicksand', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1b4332;
+      background: #ffffff;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .scanner-name-input::placeholder {
+      color: #9e9e9e;
+      font-weight: 500;
+      opacity: 1;
+    }
+    .scanner-name-input:focus {
+      outline: none;
+      border-color: #e65100;
+      box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.15);
+    }
 
     /* Popping Animated Check-In Success Modal */
     .pop-in-card {
@@ -337,7 +369,7 @@
 
     <div class="device-bar">
       <span class="device-label-group">📱 Scanner: <span id="device-name-display">Not Set</span></span>
-      <button class="device-btn" onclick="changeDeviceName()">Change</button>
+      <button class="device-btn" onclick="openDeviceNameModal(true)">Change</button>
     </div>
 
     <div id="status" class="status-msg"></div>
@@ -387,6 +419,19 @@
 
     <div class="footer-text">
       Developed by Drei Delosa (<a class="footer-link" href="https://www.linkedin.com/in/dreivance/" target="_blank" rel="noopener noreferrer">@dreivance</a>)
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM SCANNER DEVICE NAME MODAL ("Drei's phone" as pale placeholder text) -->
+<div id="device-name-modal" class="modal-overlay">
+  <div class="modal-card">
+    <h3>📱 Scanner Device Name</h3>
+    <p class="scanner-name-desc">Enter a name for this scanner device before checking in participants:</p>
+    <input type="text" id="scanner-name-input" class="scanner-name-input" placeholder="Drei's phone" autocomplete="off">
+    <div style="display: flex; gap: 10px;">
+      <button type="button" id="cancel-device-btn" class="btn-cancel" onclick="closeDeviceNameModal()" style="display:none;">Cancel</button>
+      <button type="button" class="btn-confirm" onclick="saveDeviceName()">✅ Save Name</button>
     </div>
   </div>
 </div>
@@ -490,6 +535,16 @@
     renderTable();
     populateCameraList();
     loadVoices();
+
+    const nameInput = document.getElementById('scanner-name-input');
+    if (nameInput) {
+      nameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveDeviceName();
+        }
+      });
+    }
   });
 
   document.addEventListener('visibilitychange', () => {
@@ -511,20 +566,44 @@
   });
 
   function checkDeviceName() {
-    if (!scannerDeviceName) {
-      scannerDeviceName = prompt("Enter a name for this scanner:", "Drei's phone") || "Drei's phone";
-      localStorage.setItem('scanner_device_name', scannerDeviceName);
-    }
-    document.getElementById('device-name-display').innerText = scannerDeviceName;
-  }
-
-  function changeDeviceName() {
-    const newName = prompt("Update device name:", scannerDeviceName || "Drei's phone");
-    if (newName && newName.trim()) {
-      scannerDeviceName = newName.trim();
-      localStorage.setItem('scanner_device_name', scannerDeviceName);
+    if (!scannerDeviceName || !scannerDeviceName.trim()) {
+      openDeviceNameModal(false);
+    } else {
       document.getElementById('device-name-display').innerText = scannerDeviceName;
     }
+  }
+
+  function openDeviceNameModal(allowCancel) {
+    const modal = document.getElementById('device-name-modal');
+    const input = document.getElementById('scanner-name-input');
+    const cancelBtn = document.getElementById('cancel-device-btn');
+
+    // Keep value empty when not set so "Drei's phone" shows as pale placeholder text
+    input.value = allowCancel && scannerDeviceName ? scannerDeviceName : "";
+    cancelBtn.style.display = allowCancel ? "block" : "none";
+    modal.style.display = 'flex';
+    setTimeout(() => input.focus(), 100);
+  }
+
+  function closeDeviceNameModal() {
+    if (scannerDeviceName && scannerDeviceName.trim()) {
+      document.getElementById('device-name-modal').style.display = 'none';
+    }
+  }
+
+  function saveDeviceName() {
+    const input = document.getElementById('scanner-name-input');
+    const entered = input.value.trim();
+    if (!entered) {
+      input.focus();
+      input.style.borderColor = "#d32f2f";
+      return;
+    }
+    input.style.borderColor = "#2e7d32";
+    scannerDeviceName = entered;
+    localStorage.setItem('scanner_device_name', scannerDeviceName);
+    document.getElementById('device-name-display').innerText = scannerDeviceName;
+    document.getElementById('device-name-modal').style.display = 'none';
   }
 
   function handleBannerError() {
@@ -567,6 +646,11 @@
 
   async function startScanning() {
     if (isScanning) return;
+
+    if (!scannerDeviceName || !scannerDeviceName.trim()) {
+      openDeviceNameModal(false);
+      return;
+    }
 
     unlockMediaElements();
 
