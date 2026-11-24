@@ -35,6 +35,36 @@
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='38' viewBox='0 0 240 38'%3E%3Cdefs%3E%3Cfilter id='s' x='-10%25' y='-10%25' width='120%25' height='130%25'%3E%3CfeDropShadow dx='0' dy='1.5' stdDeviation='1' flood-color='%23000' flood-opacity='0.28'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23s)'%3E%3Cpolygon points='4,3 38,8 19,31' fill='%23e53935'/%3E%3Cpolygon points='42,8 76,12 58,35' fill='%23fdd835'/%3E%3Cpolygon points='80,12 116,13 98,36' fill='%231e88e5'/%3E%3Cpolygon points='124,13 160,12 142,36' fill='%2343a047'/%3E%3Cpolygon points='164,12 198,8 182,35' fill='%23fb8c00'/%3E%3Cpolygon points='202,8 236,3 221,31' fill='%238e24aa'/%3E%3C/g%3E%3Cpath d='M 0 2 Q 120 22 240 2' fill='none' stroke='%231b4332' stroke-width='2.2'/%3E%3C/svg%3E");
     }
 
+    /* Full-Screen Confetti & Party Popper Overlay */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1500;
+    }
+
+    .popper-badge-burst {
+      position: fixed;
+      top: 16%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 64px;
+      z-index: 1501;
+      pointer-events: none;
+      display: none;
+      animation: popperPopAnim 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes popperPopAnim {
+      0% { transform: translate(-50%, -50%) scale(0.2) rotate(-25deg); opacity: 0; }
+      25% { transform: translate(-50%, -50%) scale(1.25) rotate(10deg); opacity: 1; }
+      55% { transform: translate(-50%, -55%) scale(1.05) rotate(-5deg); opacity: 1; }
+      100% { transform: translate(-50%, -70%) scale(0.9) rotate(0deg); opacity: 0; }
+    }
+
     .container { max-width: 480px; margin: 4px auto 0 auto; }
 
     .card {
@@ -259,6 +289,13 @@
     }
 
     #result-screen { display: none; }
+    .pop-reveal {
+      animation: passPopReveal 0.48s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes passPopReveal {
+      0% { transform: scale(0.88); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
 
     #qr-container {
       margin: 12px auto;
@@ -276,23 +313,16 @@
       border-radius: 8px;
       display: block;
     }
-    /* Two-Line Name and Email Display */
     .attendee-summary-tag {
       margin-top: 12px;
       text-align: center;
       line-height: 1.35;
     }
-    .attendee-name-line {
+    .attendee-primary-line {
       font-weight: 700;
-      font-size: 16px;
+      font-size: 17px;
       color: #1b4332;
-    }
-    .attendee-email-line {
-      font-weight: 700;
-      font-size: 13px;
-      color: #2e7d32;
-      margin-top: 2px;
-      word-break: break-all;
+      word-break: break-word;
     }
     .table-assignment-box {
       margin-top: 10px;
@@ -324,7 +354,7 @@
       margin-top: 2px;
     }
     
-    .status-msg { font-size: 13px; font-weight: bold; display: none; margin-bottom: 12px; padding: 8px; border-radius: 8px; }
+    .status-msg { font-size: 13px; font-weight: bold; display: none; margin-bottom: 12px; padding: 8px; border-radius: 8px; word-break: break-word; }
     .status-error { color: #c62828; background: #ffebee; }
     .status-loading { color: #1b5e20; background: #e8f5e9; }
     .status-success { color: #1b5e20; background: #c8e6c9; }
@@ -401,6 +431,13 @@
 <body>
 
   <div class="flag-banner"></div>
+
+  <!-- Confetti Canvas & Party Popper Pop Animation -->
+  <canvas id="confetti-canvas"></canvas>
+  <div id="popper-burst" class="popper-badge-burst">🎉🥳🎊</div>
+
+  <!-- Preloaded "happy fiesta.mp4" audio element -->
+  <video id="audio-happy-fiesta" src="happy%20fiesta.mp4" preload="auto" playsinline style="display:none;"></video>
 
   <!-- ANIMATED MOVING FLOATING ALERT -->
   <div id="floating-loader" class="floating-alert-backdrop">
@@ -524,9 +561,20 @@
     let finalPassBlob = null;
     let finalDownloadDataUrl = "";
     let activeMediaStream = null;
+    let cachedVoices = [];
     const DEFAULT_DOMAIN = "unified-accounting.com";
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
     const LOGO_PNG_PATH = "Unified%20Global%20Logo%202023-08.png";
+
+    function loadVoices() {
+      if ('speechSynthesis' in window) {
+        cachedVoices = window.speechSynthesis.getVoices();
+      }
+    }
+    if ('speechSynthesis' in window) {
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && activeMediaStream) {
@@ -599,17 +647,151 @@
       ctx.closePath();
     }
 
-    // Draw centered Fiesta Banderitas across the top of the downloadable PNG pass
+    // Helper: Returns Name if pulled from list, otherwise falls back to Email
+    function getDisplayIdentity(name, email) {
+      const cleanName = String(name || "").trim();
+      const cleanEmail = String(email || "").trim().toLowerCase();
+      if (cleanName && cleanName.toLowerCase() !== "guest" && cleanName.toLowerCase() !== cleanEmail) {
+        return cleanName;
+      }
+      return cleanEmail;
+    }
+
+    function unlockHappyFiestaAudio() {
+      const fiestaAudio = document.getElementById('audio-happy-fiesta');
+      if (fiestaAudio) {
+        fiestaAudio.muted = true;
+        fiestaAudio.play().then(() => {
+          fiestaAudio.pause();
+          fiestaAudio.currentTime = 0;
+          fiestaAudio.muted = false;
+        }).catch(() => {
+          fiestaAudio.muted = false;
+        });
+      }
+    }
+
+    function triggerCelebrationWithPopper() {
+      const fiestaAudio = document.getElementById('audio-happy-fiesta');
+      if (fiestaAudio) {
+        fiestaAudio.muted = false;
+        fiestaAudio.currentTime = 0;
+        fiestaAudio.play().catch(() => {
+          speakHappyFiestaFallback();
+        });
+      } else {
+        speakHappyFiestaFallback();
+      }
+
+      const popperEl = document.getElementById('popper-burst');
+      if (popperEl) {
+        popperEl.style.display = 'none';
+        void popperEl.offsetWidth;
+        popperEl.style.display = 'block';
+        setTimeout(() => {
+          popperEl.style.display = 'none';
+        }, 1500);
+      }
+
+      launchPartyPopperConfetti();
+    }
+
+    function speakHappyFiestaFallback() {
+      if (!('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => {
+          const n = v.name.toLowerCase();
+          return (n.includes('samantha') || n.includes('natural') || n.includes('neural') || n.includes('female') || n.includes('google us english') || n.includes('zira') || n.includes('aria') || n.includes('jenny')) && !n.includes('male');
+        }) || voices.find(v => v.lang && v.lang.startsWith('en')) || null;
+
+        const u = new SpeechSynthesisUtterance("Happy Fiesta!");
+        u.pitch = 1.45;
+        u.rate = 1.18;
+        u.volume = 1.0;
+        if (preferredVoice) u.voice = preferredVoice;
+        window.speechSynthesis.speak(u);
+      } catch (e) {}
+    }
+
+    function launchPartyPopperConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ['#e53935', '#fdd835', '#1e88e5', '#43a047', '#fb8c00', '#8e24aa', '#ff4081'];
+      const particles = [];
+      const originX = canvas.width / 2;
+      const originY = canvas.height * 0.35;
+
+      for (let i = 0; i < 95; i++) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.45;
+        const speed = 7 + Math.random() * 14;
+        particles.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 2,
+          w: 7 + Math.random() * 7,
+          h: 10 + Math.random() * 8,
+          color: colors[i % colors.length],
+          rotation: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 14,
+          gravity: 0.32 + Math.random() * 0.14,
+          drag: 0.975,
+          opacity: 1
+        });
+      }
+
+      let frame = 0;
+      const maxFrames = 140;
+
+      function animateConfetti() {
+        frame++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.forEach(p => {
+          p.vx *= p.drag;
+          p.vy = p.vy * p.drag + p.gravity;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rotation += p.rotSpeed;
+          if (frame > 95) {
+            p.opacity = Math.max(0, 1 - (frame - 95) / 45);
+          }
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = p.opacity;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        });
+
+        if (frame < maxFrames) {
+          requestAnimationFrame(animateConfetti);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+
+      requestAnimationFrame(animateConfetti);
+    }
+
     function drawCenteredBanderitas(ctx, canvasWidth) {
       const colors = ['#e53935', '#fdd835', '#1e88e5', '#43a047', '#fb8c00', '#8e24aa'];
       const flagCount = 12;
-      const spanWidth = canvasWidth - 48; // 24px inset on each side for centered symmetry
+      const spanWidth = canvasWidth - 48;
       const startX = (canvasWidth - spanWidth) / 2;
       const step = spanWidth / flagCount;
 
       const getStringY = (x) => {
-        const t = (x - startX) / spanWidth; // 0 to 1
-        return 24 + 26 * 4 * t * (1 - t); // Smooth symmetric catenary curve
+        const t = (x - startX) / spanWidth;
+        return 24 + 26 * 4 * t * (1 - t);
       };
 
       ctx.save();
@@ -635,7 +817,6 @@
       }
       ctx.restore();
 
-      // Draped dark-green string
       ctx.save();
       ctx.strokeStyle = "#1b4332";
       ctx.lineWidth = 4;
@@ -799,6 +980,7 @@
     }
 
     function confirmAndGenerate() {
+      unlockHappyFiestaAudio();
       document.getElementById('email-confirm-modal').style.display = 'none';
       processAndGenerate();
     }
@@ -842,11 +1024,20 @@
         await generateCustomQRCode(attendeeName, contact, email, driveUrl, tableNumber, tableFound);
         document.getElementById('form-screen').style.display = 'none';
         document.getElementById('result-status-msg').style.display = 'none';
-        document.getElementById('result-screen').style.display = 'block';
+
+        const resultScreen = document.getElementById('result-screen');
+        resultScreen.classList.remove('pop-reveal');
+        void resultScreen.offsetWidth;
+        resultScreen.classList.add('pop-reveal');
+        resultScreen.style.display = 'block';
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        triggerCelebrationWithPopper();
       } catch (qrErr) {
-        console.error(qrErr);
-        showStatus("Error generating QR code. Please try again.", "error");
+        console.error("QR generation failure:", qrErr);
+        const reason = (qrErr && qrErr.message) ? ` (${qrErr.message})` : "";
+        showStatus(`Error generating QR code${reason}. Please try again.`, "error");
       } finally {
         showFloatingLoader(false);
         btn.disabled = false;
@@ -862,7 +1053,6 @@
     }
 
     async function renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound) {
-      // Ensure web fonts ('Fredoka One' & 'Quicksand') are ready before drawing on canvas
       if (document.fonts && document.fonts.ready) {
         try { await document.fonts.ready; } catch (e) {}
       }
@@ -871,19 +1061,10 @@
         const qrDataUrl = qrCanvas.toDataURL("image/png");
         document.getElementById('final-qr-img').src = qrDataUrl;
 
-        // Render Name and Email in two separate lines on screen
+        // Show only the Name; fallback to Email only if Name wasn't pulled from the list
+        const primaryIdentity = getDisplayIdentity(attendeeName, normalizedEmail);
         const infoContainer = document.getElementById('result-attendee-info');
-        if (attendeeName && attendeeName !== "Guest") {
-          infoContainer.innerHTML = `
-            <div class="attendee-name-line">${escapeHtml(attendeeName)}</div>
-            <div class="attendee-email-line">${escapeHtml(normalizedEmail)}</div>
-          `;
-        } else {
-          infoContainer.innerHTML = `
-            <div class="attendee-name-line">Guest</div>
-            <div class="attendee-email-line">${escapeHtml(normalizedEmail)}</div>
-          `;
-        }
+        infoContainer.innerHTML = `<div class="attendee-primary-line">${escapeHtml(primaryIdentity)}</div>`;
 
         const tableBox = document.getElementById('table-box');
         const tableLabel = document.getElementById('table-box-label');
@@ -903,15 +1084,13 @@
           tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
         }
 
-        // High-Resolution Downloadable Fiesta Pass matching on-screen design, fonts, borders & centered banderitas
         const W = 720;
-        const H = 980;
+        const H = 960;
         const passCanvas = document.createElement('canvas');
         passCanvas.width = W;
         passCanvas.height = H;
         const pCtx = passCanvas.getContext('2d');
 
-        // Soft Fiesta Sky-to-Mint Backdrop
         const bgGrad = pCtx.createLinearGradient(0, 0, 0, H);
         bgGrad.addColorStop(0, "#70bbfd");
         bgGrad.addColorStop(0.5, "#a2d2ff");
@@ -919,7 +1098,6 @@
         pCtx.fillStyle = bgGrad;
         pCtx.fillRect(0, 0, W, H);
 
-        // Cream Card with Outer Mint Outline & Dark Green Border (matching .card CSS)
         const cardX = 32;
         const cardY = 44;
         const cardW = W - 64;
@@ -936,25 +1114,21 @@
         pCtx.lineWidth = 8;
         pCtx.stroke();
 
-        // Centered Fiesta Banderitas across the top
         drawCenteredBanderitas(pCtx, W);
 
-        // Title ("YOUR FIESTA PASS" in Fredoka One)
         pCtx.fillStyle = "#e65100";
         pCtx.font = "44px 'Fredoka One', sans-serif";
         pCtx.textAlign = "center";
         pCtx.fillText("YOUR FIESTA PASS", W / 2, 152);
 
-        // Subtitle ("Present this QR code at the entrance" in Quicksand Bold)
         pCtx.fillStyle = "#2e7d32";
         pCtx.font = "700 22px 'Quicksand', sans-serif";
         pCtx.fillText("Present this QR code at the entrance", W / 2, 188);
 
-        // Inner White QR Box with Dashed Green Border (matching #qr-container)
         const boxX = 76;
         const boxY = 216;
         const boxW = W - 152;
-        const boxH = 636;
+        const boxH = 616;
 
         pCtx.fillStyle = "#ffffff";
         drawRoundedRect(pCtx, boxX, boxY, boxW, boxH, 28);
@@ -968,26 +1142,19 @@
         pCtx.stroke();
         pCtx.restore();
 
-        // Centered QR Code Image
         const qrSize = 400;
         pCtx.drawImage(qrCanvas, (W - qrSize) / 2, 242, qrSize, qrSize);
 
-        // Two-Line Name & Email Display inside the pass
-        const displayName = (attendeeName && attendeeName !== "Guest") ? attendeeName : "Guest";
+        // Display Name only (or Email fallback if Name wasn't pulled)
         pCtx.fillStyle = "#1b4332";
         pCtx.font = "700 28px 'Quicksand', sans-serif";
-        pCtx.fillText(displayName, W / 2, 686);
+        pCtx.fillText(primaryIdentity, W / 2, 692);
 
-        pCtx.fillStyle = "#2e7d32";
-        pCtx.font = "700 21px 'Quicksand', sans-serif";
-        pCtx.fillText(normalizedEmail, W / 2, 720);
-
-        // Assigned Table Box (matching .table-assignment-box)
         if (tableFound) {
           const tBoxW = 420;
           const tBoxH = 92;
           const tBoxX = (W - tBoxW) / 2;
-          const tBoxY = 740;
+          const tBoxY = 718;
 
           pCtx.fillStyle = "#e8f5e9";
           drawRoundedRect(pCtx, tBoxX, tBoxY, tBoxW, tBoxH, 20);
@@ -1007,7 +1174,7 @@
           const tBoxW = 480;
           const tBoxH = 92;
           const tBoxX = (W - tBoxW) / 2;
-          const tBoxY = 740;
+          const tBoxY = 718;
 
           pCtx.fillStyle = "#fff3e0";
           drawRoundedRect(pCtx, tBoxX, tBoxY, tBoxW, tBoxH, 20);
@@ -1022,7 +1189,6 @@
           pCtx.fillText("Kindly ask registration for your table number.", W / 2, tBoxY + 68);
         }
 
-        // Footer Credit inside the card
         pCtx.fillStyle = "#558b2f";
         pCtx.font = "700 17px 'Quicksand', sans-serif";
         pCtx.fillText("Developed by Drei Delosa (@dreivance)", W / 2, cardY + cardH - 26);
@@ -1036,66 +1202,82 @@
     }
 
     function generateCustomQRCode(attendeeName, contact, email, driveUrl, tableNumber, tableFound) {
-      return new Promise((resolve) => {
-        const normalizedEmail = email.trim().toLowerCase();
-        const payload = {
-          app: "UG_FIESTA",
-          n: attendeeName,
-          c: contact,
-          e: normalizedEmail,
-          i: driveUrl,
-          t: tableNumber
-        };
-        const qrString = JSON.stringify(payload);
-        const hiddenContainer = document.getElementById('qrcode-hidden');
-        hiddenContainer.innerHTML = "";
-
-        new QRCode(hiddenContainer, {
-          text: qrString,
-          width: 480,
-          height: 480,
-          colorDark : "#1b5e20",
-          colorLight : "#ffffff",
-          correctLevel : QRCode.CorrectLevel.H
-        });
-
-        setTimeout(() => {
-          const rawCanvas = hiddenContainer.querySelector("canvas");
-          const qrCanvas = document.createElement('canvas');
-          qrCanvas.width = 480;
-          qrCanvas.height = 480;
-          const qCtx = qrCanvas.getContext('2d');
-
-          qCtx.drawImage(rawCanvas, 0, 0, 480, 480);
-
-          const logoImg = new Image();
-          logoImg.crossOrigin = "anonymous";
-          logoImg.onload = async function() {
-            const maxBoxSize = 124;
-            const naturalW = logoImg.naturalWidth || logoImg.width || 124;
-            const naturalH = logoImg.naturalHeight || logoImg.height || 124;
-            const scale = Math.min(maxBoxSize / naturalW, maxBoxSize / naturalH);
-            const drawW = naturalW * scale;
-            const drawH = naturalH * scale;
-            const pad = 10;
-            const x = (480 - drawW) / 2;
-            const y = (480 - drawH) / 2;
-
-            qCtx.fillStyle = "#ffffff";
-            drawRoundedRect(qCtx, x - pad, y - pad, drawW + pad * 2, drawH + pad * 2, 18);
-            qCtx.fill();
-
-            qCtx.drawImage(logoImg, x, y, drawW, drawH);
-
-            await renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
-            resolve();
+      return new Promise((resolve, reject) => {
+        try {
+          const normalizedEmail = email.trim().toLowerCase();
+          const payload = {
+            app: "UG_FIESTA",
+            n: String(attendeeName || "Guest").substring(0, 60),
+            c: String(contact || "").substring(0, 25),
+            e: normalizedEmail,
+            i: driveUrl || "",
+            t: String(tableNumber || "Unassigned").substring(0, 30)
           };
-          logoImg.onerror = async function() {
-            await renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
-            resolve();
-          };
-          logoImg.src = LOGO_PNG_PATH;
-        }, 150);
+          const qrString = JSON.stringify(payload);
+          const hiddenContainer = document.getElementById('qrcode-hidden');
+          hiddenContainer.innerHTML = "";
+
+          new QRCode(hiddenContainer, {
+            text: qrString,
+            width: 480,
+            height: 480,
+            colorDark : "#1b5e20",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.M
+          });
+
+          setTimeout(() => {
+            try {
+              const rawSource = hiddenContainer.querySelector("canvas") || hiddenContainer.querySelector("img");
+              if (!rawSource) {
+                throw new Error("QR canvas was not rendered by browser");
+              }
+
+              const qrCanvas = document.createElement('canvas');
+              qrCanvas.width = 480;
+              qrCanvas.height = 480;
+              const qCtx = qrCanvas.getContext('2d');
+
+              qCtx.drawImage(rawSource, 0, 0, 480, 480);
+
+              const logoImg = new Image();
+              logoImg.crossOrigin = "anonymous";
+              logoImg.onload = async function() {
+                try {
+                  const maxBoxSize = 110;
+                  const naturalW = logoImg.naturalWidth || logoImg.width || 110;
+                  const naturalH = logoImg.naturalHeight || logoImg.height || 110;
+                  const scale = Math.min(maxBoxSize / naturalW, maxBoxSize / naturalH);
+                  const drawW = naturalW * scale;
+                  const drawH = naturalH * scale;
+                  const pad = 8;
+                  const x = (480 - drawW) / 2;
+                  const y = (480 - drawH) / 2;
+
+                  qCtx.fillStyle = "#ffffff";
+                  drawRoundedRect(qCtx, x - pad, y - pad, drawW + pad * 2, drawH + pad * 2, 16);
+                  qCtx.fill();
+
+                  qCtx.drawImage(logoImg, x, y, drawW, drawH);
+                } catch (logoDrawErr) {
+                  console.warn("Logo overlay skipped:", logoDrawErr);
+                }
+
+                await renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
+                resolve();
+              };
+              logoImg.onerror = async function() {
+                await renderPassCanvas(qrCanvas, attendeeName, normalizedEmail, tableNumber, tableFound);
+                resolve();
+              };
+              logoImg.src = LOGO_PNG_PATH;
+            } catch (innerErr) {
+              reject(innerErr);
+            }
+          }, 180);
+        } catch (outerErr) {
+          reject(outerErr);
+        }
       });
     }
 

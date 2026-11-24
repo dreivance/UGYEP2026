@@ -273,14 +273,8 @@
       font-family: 'Fredoka One', cursive;
       font-size: 22px;
       color: #1b5e20;
-      margin: 6px 0 4px 0;
+      margin: 6px 0 14px 0;
       word-break: break-word;
-    }
-    .success-attendee-sub {
-      font-size: 13px;
-      font-weight: 700;
-      color: #2e7d32;
-      margin-bottom: 12px;
     }
     .success-table-pill {
       display: inline-block;
@@ -305,7 +299,7 @@
     /* Duplicate Warning Modal Styling */
     .duplicate-card { border-color: #e65100; }
     .duplicate-text { font-size: 14px; font-weight: 700; color: #1b4332; line-height: 1.45; margin-bottom: 16px; }
-    .duplicate-attendee-box { background: #fff3e0; border: 2px dashed #e65100; border-radius: 10px; padding: 10px; margin-bottom: 14px; font-weight: 700; color: #bf360c; font-size: 14px; word-break: break-word; }
+    .duplicate-attendee-box { background: #fff3e0; border: 2px dashed #e65100; border-radius: 10px; padding: 10px; margin-bottom: 14px; font-weight: 700; color: #bf360c; font-size: 15px; word-break: break-word; }
     .btn-rescan-yes { background: #e65100; color: #fff; box-shadow: 0 4px 0 #b23c00; font-size: 13px !important; }
 
     .modal-image-wrapper { width: 100%; margin-bottom: 12px; border-radius: 10px; overflow: hidden; border: 2px solid #2e7d32; background: #e8f5e9; }
@@ -335,7 +329,7 @@
 
     .details-box { background: #f1f8e9; border: 1px solid #c8e6c9; border-radius: 10px; padding: 10px; margin-bottom: 15px; text-align: left; }
     .details-label { font-size: 11px; text-transform: uppercase; color: #2e7d32; font-weight: bold; }
-    .details-value { font-weight: bold; color: #1b4332; font-size: 14px; word-break: break-word; }
+    .details-value { font-weight: bold; color: #1b4332; font-size: 15px; word-break: break-word; }
 
     .btn-confirm { background: #2e7d32; color: #fff; box-shadow: 0 4px 0 #1b5e20; }
     .btn-confirm:disabled { background: #9e9e9e; box-shadow: none; cursor: not-allowed; }
@@ -405,7 +399,7 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Name / Email</th>
+            <th>Attendee</th>
             <th>Table</th>
             <th>Time</th>
             <th>Device</th>
@@ -467,13 +461,9 @@
     </div>
 
     <div class="details-box">
-      <div style="margin-bottom: 6px;">
-        <span class="details-label">Full Name</span>
-        <div id="modal-name" class="details-value">-</div>
-      </div>
-      <div style="margin-bottom: 6px;">
-        <span class="details-label">Email Address (Unique ID)</span>
-        <div id="modal-email" class="details-value">-</div>
+      <div style="margin-bottom: 8px;">
+        <span id="modal-identity-label" class="details-label">Full Name</span>
+        <div id="modal-identity-value" class="details-value">-</div>
       </div>
       <div>
         <span class="details-label">Contact Number</span>
@@ -498,7 +488,6 @@
     <div class="success-badge-icon">🎉✅</div>
     <h3>Check-In Successful!</h3>
     <div class="success-attendee-name" id="success-name">-</div>
-    <div class="success-attendee-sub" id="success-email">-</div>
     <div class="success-table-pill" id="success-table">TABLE: -</div>
     <button class="btn-scan-another" onclick="closeSuccessAndScanAnother()">📷 Scan Another</button>
   </div>
@@ -565,6 +554,16 @@
     }
   });
 
+  // Helper: Show Name if available from list, otherwise fall back to Email
+  function getDisplayIdentity(name, email) {
+    const cleanName = String(name || "").trim();
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    if (cleanName && cleanName.toLowerCase() !== "guest" && cleanName.toLowerCase() !== cleanEmail) {
+      return { text: cleanName, isName: true };
+    }
+    return { text: cleanEmail || "Unknown", isName: false };
+  }
+
   function checkDeviceName() {
     if (!scannerDeviceName || !scannerDeviceName.trim()) {
       openDeviceNameModal(false);
@@ -578,7 +577,6 @@
     const input = document.getElementById('scanner-name-input');
     const cancelBtn = document.getElementById('cancel-device-btn');
 
-    // Keep value empty when not set so "Drei's phone" shows as pale placeholder text
     input.value = allowCancel && scannerDeviceName ? scannerDeviceName : "";
     cancelBtn.style.display = allowCancel ? "block" : "none";
     modal.style.display = 'flex';
@@ -919,8 +917,8 @@
       duplicateCandidate = parsed;
 
       playDuplicateErrorSound();
-      const displayLabel = parsed.name !== "Guest" ? `${parsed.name}\n(${parsed.email})` : parsed.email;
-      document.getElementById('duplicate-attendee-info').innerText = displayLabel;
+      const identity = getDisplayIdentity(parsed.name, parsed.email);
+      document.getElementById('duplicate-attendee-info').innerText = identity.text;
       document.getElementById('duplicate-modal').style.display = 'flex';
       return;
     }
@@ -953,8 +951,9 @@
     pendingRecord = parsed;
     isConfirming = true;
 
-    document.getElementById('modal-name').innerText = parsed.name;
-    document.getElementById('modal-email').innerText = parsed.email;
+    const identity = getDisplayIdentity(parsed.name, parsed.email);
+    document.getElementById('modal-identity-label').innerText = identity.isName ? "Full Name" : "Unified Email";
+    document.getElementById('modal-identity-value').innerText = identity.text;
     document.getElementById('modal-contact').innerText = parsed.contact;
     document.getElementById('modal-table').innerText = parsed.table;
     
@@ -1004,9 +1003,8 @@
     confirmBtn.disabled = false;
     confirmBtn.innerText = "✅ Confirm";
 
-    const displayName = checkedInRecord.name !== "Guest" ? checkedInRecord.name : normalizedEmail;
-    document.getElementById('success-name').innerText = displayName;
-    document.getElementById('success-email').innerText = checkedInRecord.name !== "Guest" ? normalizedEmail : "";
+    const identity = getDisplayIdentity(checkedInRecord.name, normalizedEmail);
+    document.getElementById('success-name').innerText = identity.text;
     document.getElementById('success-table').innerText = `TABLE: ${checkedInRecord.table}`;
     document.getElementById('success-modal').style.display = 'flex';
 
@@ -1065,14 +1063,11 @@
     }
 
     tbody.innerHTML = logs.map((log, index) => {
-      const primaryDisplay = (log.Name && log.Name !== "Guest" && log.Name !== log.Email)
-        ? `<strong>${escapeHtml(log.Name)}</strong><br><span style="color:#555; font-size:10px;">${escapeHtml(log.Email || "")}</span>`
-        : `<strong>${escapeHtml((log.Email || log.Name || "n/a").toLowerCase())}</strong>`;
-
+      const identity = getDisplayIdentity(log.Name, log.Email);
       return `
         <tr>
           <td>${logs.length - index}</td>
-          <td>${primaryDisplay}</td>
+          <td><strong>${escapeHtml(identity.text)}</strong></td>
           <td><span style="background:#ffe0b2; color:#bf360c; padding:2px 5px; border-radius:4px; font-weight:bold;">${escapeHtml(log.Table || "Unassigned")}</span></td>
           <td>${log.Time}</td>
           <td><span style="background:#e8f5e9; color:#1b5e20; padding:2px 4px; border-radius:4px; font-weight:bold;">${escapeHtml(log.Device || "N/A")}</span></td>
