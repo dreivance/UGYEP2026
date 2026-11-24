@@ -181,10 +181,18 @@
       background: linear-gradient(180deg, #78909c 0%, #546e7a 100%);
       color: white;
       box-shadow: 0 5px 0 #37474f;
-      margin-top: 10px;
+      margin-top: 12px;
       font-size: 14px;
       padding: 11px 12px;
       white-space: nowrap;
+    }
+
+    .screenshot-fallback-note {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #2e7d32;
+      margin: 10px 4px 2px 4px;
+      line-height: 1.4;
     }
 
     .floating-alert-backdrop {
@@ -298,18 +306,6 @@
       color: #bf360c;
       line-height: 1.4;
       margin-top: 2px;
-    }
-
-    .save-instruction-box {
-      background: #e3f2fd;
-      border: 1.5px solid #1e88e5;
-      color: #0d47a1;
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      margin-top: 12px;
-      line-height: 1.4;
     }
     
     .status-msg { font-size: 13px; font-weight: bold; display: none; margin-bottom: 12px; padding: 8px; border-radius: 8px; }
@@ -454,7 +450,7 @@
       </div>
     </div>
 
-    <!-- SCREEN 2: DEDICATED QR RESULT WINDOW (BANNER REMOVED) -->
+    <!-- SCREEN 2: DEDICATED QR RESULT WINDOW -->
     <div class="card" id="result-screen">
       <h2>Your Fiesta Pass</h2>
       <p class="sub">Present this QR code at the entrance</p>
@@ -470,11 +466,10 @@
         </div>
       </div>
 
-      <div class="save-instruction-box">
-        Save a screenshot of this QR code or save the QR image to your phone (button below)
-      </div>
-
       <button type="button" class="action-btn btn-download" id="download-btn" onclick="saveQRToGallery()">⬇️ Save QR Image to Phone</button>
+      <div class="screenshot-fallback-note">
+        You may also just take a screenshot if you’re having issues with the button above.
+      </div>
       <button type="button" class="action-btn btn-back" onclick="backToForm()">Generate Again</button>
 
       <div class="footer-text">
@@ -615,7 +610,6 @@
             audio: false
           });
         } catch (firstErr) {
-          // Fallback for Android devices that reject facingMode constraints
           stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: false
@@ -829,7 +823,6 @@
           tableDisplay.innerText = "Table assignment not found. Kindly ask the registration team for your assigned table number.";
         }
 
-        // High-resolution Pass Canvas (640x830) so saved gallery photos are crisp on Retina/AMOLED screens
         const passCanvas = document.createElement('canvas');
         passCanvas.width = 640;
         passCanvas.height = 830;
@@ -926,7 +919,6 @@
           const logoImg = new Image();
           logoImg.crossOrigin = "anonymous";
           logoImg.onload = async function() {
-            // Preserve original aspect ratio of Unified Global Logo 2023-08.png
             const maxBoxSize = 124;
             const naturalW = logoImg.naturalWidth || logoImg.width || 124;
             const naturalH = logoImg.naturalHeight || logoImg.height || 124;
@@ -977,17 +969,17 @@
 
         const file = new File([blob], fileName, { type: "image/png" });
 
-        // Primary path for iOS Safari & Android Chrome: Native Share Sheet -> "Save Image" (saves directly to Photos/Gallery)
+        // Native Share Sheet -> "Save Image" (saves directly to iOS Photos / Android Gallery)
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
             title: "Unified Fiesta QR Pass"
           });
-          showStatus("✅ Select 'Save Image' / 'Save to Photos' to store in your gallery.", "success", "result-status-msg");
+          showStatus("QR image saved in your photos", "success", "result-status-msg");
           return;
         }
 
-        // Fallback for Android / Desktop browsers without Web Share file support: Blob URL Download
+        // Blob URL Download fallback for browsers without Web Share file support
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
@@ -998,12 +990,11 @@
         document.body.removeChild(link);
 
         setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-        showStatus("✅ QR image saved to your device!", "success", "result-status-msg");
+        showStatus("QR image saved in your photos", "success", "result-status-msg");
       } catch (err) {
-        // Ignore user cancelling the share sheet
         if (err && err.name === "AbortError") return;
         console.error("Save error:", err);
-        showStatus("Tip: You can also press & hold the QR code image above and tap 'Save to Photos', or take a screenshot.", "error", "result-status-msg");
+        showStatus("You may also just take a screenshot if you’re having issues with the button above.", "error", "result-status-msg");
       }
     }
   </script>
