@@ -13,25 +13,29 @@
     body {
       font-family: 'Quicksand', -apple-system, sans-serif;
       margin: 0;
-      padding: 30px 15px;
+      padding: 42px 15px 30px 15px;
       background: linear-gradient(180deg, #70bbfd 0%, #a2d2ff 50%, #c8e6c9 100%);
       background-attachment: fixed;
       color: #1b4332;
       min-height: 100vh;
     }
 
+    /* Authentic Fiesta Banderitas Bunting (Curved String + Triangular Pennants) */
     .flag-banner {
       width: 100%;
-      height: 24px;
+      height: 38px;
       position: fixed;
       top: 0;
       left: 0;
       z-index: 100;
-      background-image: repeating-linear-gradient(45deg, #e53935 0 20px, #fdd835 20px 40px, #43a047 40px 60px, #1e88e5 60px 80px, #8e24aa 80px 100px);
-      clip-path: polygon(0 0, 100% 0, 100% 70%, 95% 100%, 90% 70%, 85% 100%, 80% 70%, 75% 100%, 70% 70%, 65% 100%, 60% 70%, 55% 100%, 50% 70%, 45% 100%, 40% 70%, 35% 100%, 30% 70%, 25% 100%, 20% 70%, 15% 100%, 10% 70%, 5% 100%, 0 70%);
+      pointer-events: none;
+      background-repeat: repeat-x;
+      background-position: top left;
+      background-size: 240px 38px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='38' viewBox='0 0 240 38'%3E%3Cdefs%3E%3Cfilter id='s' x='-10%25' y='-10%25' width='120%25' height='130%25'%3E%3CfeDropShadow dx='0' dy='1.5' stdDeviation='1' flood-color='%23000' flood-opacity='0.28'/%3E%3C/filter%3E%3C/defs%3E%3Cg filter='url(%23s)'%3E%3Cpolygon points='4,3 38,8 19,31' fill='%23e53935'/%3E%3Cpolygon points='42,8 76,12 58,35' fill='%23fdd835'/%3E%3Cpolygon points='80,12 116,13 98,36' fill='%231e88e5'/%3E%3Cpolygon points='124,13 160,12 142,36' fill='%2343a047'/%3E%3Cpolygon points='164,12 198,8 182,35' fill='%23fb8c00'/%3E%3Cpolygon points='202,8 236,3 221,31' fill='%238e24aa'/%3E%3C/g%3E%3Cpath d='M 0 2 Q 120 22 240 2' fill='none' stroke='%231b4332' stroke-width='2.2'/%3E%3C/svg%3E");
     }
 
-    .container { max-width: 480px; margin: 10px auto 0 auto; }
+    .container { max-width: 480px; margin: 4px auto 0 auto; }
 
     .card {
       background: #fffdf5;
@@ -512,7 +516,6 @@
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3EhOPHIzcAmpBVH-gwUO1e6hHU-HgG2t6fwDIZNaOQJELWaA5CMpP1dOgHi9_ZUBI/exec";
     const LOGO_PNG_PATH = "Unified%20Global%20Logo%202023-08.png";
 
-    // Stop camera automatically if user switches apps or locks phone
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && activeMediaStream) {
         stopSelfieCamera();
@@ -564,7 +567,6 @@
       if (fb) fb.style.display = 'block';
     }
 
-    // Cross-browser rounded rectangle helper (compatible with all Android & iOS WebViews)
     function drawRoundedRect(ctx, x, y, width, height, radius) {
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
@@ -579,9 +581,6 @@
       ctx.closePath();
     }
 
-    // =========================================================================
-    // LIVE FRONT-CAMERA SELFIE CAPTURE (iOS SAFARI + ANDROID CHROME COMPATIBLE)
-    // =========================================================================
     async function startSelfieCamera() {
       const openBtn = document.getElementById('open-cam-btn');
       const snapBtn = document.getElementById('snap-btn');
@@ -947,9 +946,6 @@
       });
     }
 
-    // =========================================================================
-    // SAVE QR TO PHONE GALLERY (iOS PHOTOS & ANDROID GALLERY COMPATIBLE)
-    // =========================================================================
     async function saveQRToGallery() {
       const emailPrefix = (document.getElementById('email').value.trim().toLowerCase().split('@')[0] || "guest")
         .replace(/[^a-z0-9_-]/g, "_");
@@ -969,7 +965,6 @@
 
         const file = new File([blob], fileName, { type: "image/png" });
 
-        // Native Share Sheet -> "Save Image" (saves directly to iOS Photos / Android Gallery)
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             files: [file],
@@ -979,7 +974,6 @@
           return;
         }
 
-        // Blob URL Download fallback for browsers without Web Share file support
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
